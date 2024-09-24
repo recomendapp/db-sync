@@ -1,0 +1,44 @@
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
+# Generic metadata about this project
+name: tmdb
+prefect-version: 2.14.13
+
+# build section allows you to manage and build docker images
+build: null
+
+# push section allows you to manage if and how this project is uploaded to remote locations
+push: null
+
+# pull section allows you to provide instructions for cloning this project in remote locations
+pull:
+- prefect.deployments.steps.git_clone:
+    id: tmdb
+    repository: https://github.com/recomendapp/db-sync.git
+    branch: main
+    credentials: "{{ prefect.blocks.secret.github-access-token }}"
+
+
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+- name: sync_tmdb
+  version: 1
+  tags: ["tmdb"]
+  description: "Sync TMDB data"
+  schedule: {
+    "timezone": "Europe/Paris",
+    "cron": "0 9 * * *"
+  }
+  flow_name: sync_tmdb
+  entrypoint: ./__main__.py:sync_tmdb
+  parameters: {}
+  work_pool:
+    name: "VPS_Worker_1"
+    work_queue_name: null
+    job_variables: {
+      "env": {
+        "EXTRA_PIP_PACKAGES": "supabase more_itertools psycopg2-binary"
+      }
+    }
