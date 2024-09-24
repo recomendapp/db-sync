@@ -1,8 +1,9 @@
-from sync_tmdb.models.extra_language import ExtraLanguages
+from sync_tmdb.utils.config import Config, get_config
+from sync_tmdb.utils.tmdb import TMDBClient
 
-class Config:
-	def __init__(self, extra_languages: list):
-		# Supported extra languages (default is English)
-		self.extra_languages = ExtraLanguages(extra_languages)
+class LanguageConfig:
+	def __init__(self):
+		self.main_config: Config = get_config()
+		self.tmdb_client: TMDBClient = TMDBClient(self.main_config)
 
 
