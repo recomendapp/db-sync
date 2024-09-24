@@ -15,9 +15,11 @@ from .flows.language.sync_language import sync_language
 # ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb", log_prints=True)
-def sync_tmdb():
-	date = date.today()
+def sync_tmdb(current_date: date = date.today()):
 	logger = get_run_logger()
-	logger.info(f"Starting synchronization with TMDb for {date}...")
-	
-	sync_language(date=date)
+	logger.info(f"Starting synchronization with TMDb for {current_date}...")
+	try:
+		sync_language(date=current_date)
+	except Exception as e:
+		logger.error(f"Syncing with TMDb failed: {e}")
+		exit(1)
