@@ -4,41 +4,47 @@
 
 # Generic metadata about this project
 name: db-sync
-prefect-version: 2.14.13
+prefect-version: 3.0.3
 
 # build section allows you to manage and build docker images
-build: null
+build:
 
 # push section allows you to manage if and how this project is uploaded to remote locations
-push: null
+push:
 
 # pull section allows you to provide instructions for cloning this project in remote locations
 pull:
 - prefect.deployments.steps.git_clone:
-    id: tmdb
+    id: db-sync # a user-provided identifier for this step
     repository: https://github.com/recomendapp/db-sync.git
     branch: main
-    credentials: "{{ prefect.blocks.secret.github-access-token }}"
+    credentials: '{{ prefect.blocks.github-credentials.github-credentials }}'
+# - prefect.deployments.steps.pip_install_requirements:
+#     directory: "{{ db-sync.directory }}" # `db-sync` is a user-provided `id` field
+#     requirements_file: requirements.txt
 
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
 - name: sync_tmdb
-  version: 1
-  tags: ["tmdb"]
-  description: "Sync TMDB data"
-  schedule: {
-    "timezone": "Europe/Paris",
-    "cron": "0 9 * * *"
-  }
-  # flow_name: sync_tmdb
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB data
+  schedules:
+  - cron: 0 9 * * *
+    timezone: Europe/Paris
+    day_or: true
+    active: true
+    max_active_runs:
+    catchup: false
   entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
   parameters: {}
   work_pool:
-    name: "VPS_Worker_1"
-    work_queue_name: null
-    job_variables: {
-      "env": {
-        "EXTRA_PIP_PACKAGES": "more_itertools psycopg2-binary"
-      }
-    }
+    name: VPS_Worker_1
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
