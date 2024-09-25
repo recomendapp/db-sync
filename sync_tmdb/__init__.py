@@ -1,1 +1,1 @@
-from sync_tmdb.sync_tmdb import sync_tmdb
+from .sync_tmdb import sync_tmdb

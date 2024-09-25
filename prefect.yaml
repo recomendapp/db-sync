@@ -3,7 +3,7 @@
 # control along with your flow code.
 
 # Generic metadata about this project
-name: tmdb
+name: db-sync
 prefect-version: 2.14.13
 
 # build section allows you to manage and build docker images
@@ -31,14 +31,14 @@ deployments:
     "timezone": "Europe/Paris",
     "cron": "0 9 * * *"
   }
-  flow_name: sync_tmdb
-  entrypoint: ./__main__.py:sync_tmdb
+  # flow_name: sync_tmdb
+  entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
   parameters: {}
   work_pool:
     name: "VPS_Worker_1"
     work_queue_name: null
     job_variables: {
       "env": {
-        "EXTRA_PIP_PACKAGES": "supabase more_itertools psycopg2-binary"
+        "EXTRA_PIP_PACKAGES": "more_itertools psycopg2-binary"
       }
     }
