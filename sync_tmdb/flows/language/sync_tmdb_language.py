@@ -65,13 +65,9 @@ def process_missing_languages(config: LanguageConfig, tmdb_languages: list, miss
 		# Initialize the mappers
 		mappers = Mappers(language=tmdb_languages, default_language=config.main_config.default_language, extra_languages=config.main_config.extra_languages)
 
-		# Map the languages
-		languages_df = mappers.map_language()
-		languages_translation_df = mappers.map_language_translation()
-
 		# Generate the CSV files
-		config.language = create_csv(data=languages_df, tmp_directory=config.main_config.tmp_directory, prefix="language")
-		config.language_translation = create_csv(data=languages_translation_df, tmp_directory=config.main_config.tmp_directory, prefix="language_translation")
+		config.language = create_csv(data=mappers.language, tmp_directory=config.main_config.tmp_directory, prefix="language")
+		config.language_translation = create_csv(data=mappers.language_translation, tmp_directory=config.main_config.tmp_directory, prefix="language_translation")
 
 		# Load the CSV files into the database using copy
 		with config.main_config.db_client.get_connection() as conn:

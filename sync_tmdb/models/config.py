@@ -17,7 +17,7 @@ class Config:
 		self.db_client = DBClient()
 		self.tmdb_client = TMDBClient(config=self.config)
 
-	# def __del__(self):
-	# 	if self.tmp_directory and os.path.exists(self.tmp_directory):
-	# 		shutil.rmtree(self.tmp_directory)
+	def __del__(self):
+		if self.tmp_directory and os.path.exists(self.tmp_directory):
+			shutil.rmtree(self.tmp_directory)
 
