@@ -6,11 +6,12 @@ from datetime import date
 
 # ---------------------------------- Prefect --------------------------------- #
 
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
 
 # ----------------------------------- Flows ---------------------------------- #
-from .flows.language.sync_language import sync_language
+
+from .flows import sync_tmdb_language
 
 # ---------------------------------------------------------------------------- #
 
@@ -19,7 +20,7 @@ def sync_tmdb(current_date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Starting synchronization with TMDb for {current_date}...")
 	try:
-		sync_language(date=current_date)
+		sync_tmdb_language(date=current_date)
 	except Exception as e:
 		logger.error(f"Syncing with TMDb failed: {e}")
 		exit(1)

@@ -1,4 +1,4 @@
-from sync_tmdb.flows.language import sync_language
+from .sync_tmdb_language import sync_tmdb_language
 
 if __name__ == "__main__":
-    sync_language()
+    sync_tmdb_language()
