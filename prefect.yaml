@@ -44,7 +44,7 @@ deployments:
     name: VPS_Worker_1
     job_variables:
       env:
-        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary
+        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
