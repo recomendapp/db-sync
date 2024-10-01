@@ -1,0 +1,11 @@
+{
+	"tmp_directory": ".tmp",
+	"extra_languages": [
+	  "fr"
+	],
+	"db_tables": {
+	  "language": "tmdb_language",
+	  "country": "tmdb_country",
+	  "genre": "tmdb_genre"
+	}
+  }
