@@ -20,7 +20,7 @@ class Config:
 		self.db_client = DBClient()
 		self.tmdb_client = TMDBClient(config=self.config)
 		self.log_manager = SyncLogsManager(config=self)
-		# self.log_manager = SyncLogsManager(db_client=self.db_client, table=self.config.get("logs", {}).get("table", "sync_logs"))
+		self.chunk_size = self.config.get("chunk_size", 1000)
 
 	# def __del__(self):
 	# 	if self.tmp_directory and os.path.exists(self.tmp_directory):

@@ -7,6 +7,7 @@ class ExtraLanguages:
     # Dictionary of supported extra languages
 	supported_languages = {
         'fr': Language(name='French', code='fr', tmdb_language='fr-FR'),
+		'es': Language(name='Spanish', code='es', tmdb_language='es-ES'),
         # Add more languages here
 	}
      
@@ -20,7 +21,19 @@ class ExtraLanguages:
 				self.languages.append(self.supported_languages[language])
 			else:
 				raise UnsupportedLanguage(f'Unsupported language: {language}')
-    
+	
+	def __iter__(self):
+		self._index = 0
+		return self
+
+	def __next__(self):
+		if self._index < len(self.languages):
+			language: Language = self.languages[self._index]
+			self._index += 1
+			return language
+		else:
+			raise StopIteration
+
 	def __str__(self):
 		return ', '.join([str(lang) for lang in self.languages])
 	
