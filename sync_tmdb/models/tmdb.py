@@ -1,8 +1,13 @@
 from prefect import task
 from prefect.logging import get_run_logger
 from prefect.blocks.system import Secret
+from prefect.concurrency.sync import rate_limit 
 from itertools import cycle
 import requests
+from datetime import date
+from ..utils.file_manager import download_file, decompress_file
+import os
+import json
 
 class TMDBClient:
 	def __init__(self, config: dict):
@@ -28,10 +33,34 @@ class TMDBClient:
 	
 	@task 
 	def request(self, endpoint: str, params: dict = {}) -> dict:
+		rate_limit("tmdb-api")
 		self.api_key = self._get_next_api_key()
 		url = f"{self.base_url}/{endpoint}"
 		params["api_key"] = self.api_key
 		response = requests.get(url, params=params)
 		response.raise_for_status()
 		return response.json()
+
+	@task
+	def get_export_ids(self, type: str, date: date) -> list:
+		try:
+			tmdb_export_collection_url_template = "http://files.tmdb.org/p/exports/{type}_ids_{date}.json.gz"
+			url = tmdb_export_collection_url_template.format(type=type, date=date.strftime("%m_%d_%Y"))
+
+			file = download_file(url=url, tmp_directory=".tmp", prefix=f"{type}_ids_{date}")
+
+			file = decompress_file(file)
+
+			with open(file, "r", encoding="utf-8") as f:
+				export_ids = [json.loads(line) for line in f.readlines()]
+			
+			if os.path.exists(file):
+				os.remove(file)
+			
+			if len(export_ids) == 0:
+				raise ValueError(f"No export ids found for {type} on {date}")
+			
+			return export_ids
+		except Exception as e:
+			raise ValueError(f"Failed to get export ids: {e}")
 	

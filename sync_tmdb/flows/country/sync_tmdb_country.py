@@ -63,7 +63,7 @@ def process_missing_countries(config: CountryConfig, tmdb_countries: list, missi
 			config.logger.warning(f"Found {len(missing_countries_set)} missing countries in the database")
 		
 		# Initialize the mappers
-		mappers = Mappers(country=tmdb_countries, default_language=config.default_language, extra_languages=config.extra_languages)
+		mappers = Mappers(countries=tmdb_countries, default_language=config.default_language, extra_languages=config.extra_languages)
 
 		# Generate the CSV files
 		config.country = create_csv(data=mappers.country, tmp_directory=config.tmp_directory, prefix="country")
@@ -102,7 +102,7 @@ def process_missing_countries(config: CountryConfig, tmdb_countries: list, missi
 					conn.rollback()
 					raise
 	except Exception as e:
-		raise ValueError(f"Failed to process missing languages: {e}")
+		raise ValueError(f"Failed to process missing countries: {e}")
 			
 
 @flow(name="sync_tmdb_country", log_prints=True)
@@ -120,11 +120,11 @@ def sync_tmdb_country(date: date = date.today()):
 		db_countries_set = get_db_countries(config)
 		config.log_manager.data_fetched()
 
-		# Compare the languages
+		# Compare the countries
 		extra_countries: set = db_countries_set - tmdb_countries_set
 		missing_countries: set = tmdb_countries_set - db_countries_set
 
-		# Process extra and missing languages
+		# Process extra and missing countries
 		config.log_manager.syncing_to_db()
 		process_extra_countries(config, extra_countries)
 		process_missing_countries(config, tmdb_countries, missing_countries)
