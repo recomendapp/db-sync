@@ -1,7 +1,7 @@
 import os
 import shutil
 from datetime import date
-from .db import DBClient
+from .db_client import DBClient
 from .language import Language
 from .extra_languages import ExtraLanguages
 from .tmdb import TMDBClient

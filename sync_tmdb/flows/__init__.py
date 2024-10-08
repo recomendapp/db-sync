@@ -4,3 +4,4 @@ from .genre import sync_tmdb_genre
 from .keyword import sync_tmdb_keyword
 from .collection import sync_tmdb_collection
 from .company import sync_tmdb_company
+from .person import sync_tmdb_person

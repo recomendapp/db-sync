@@ -39,7 +39,10 @@ class TMDBClient:
 		params["api_key"] = self.api_key
 		response = requests.get(url, params=params)
 		response.raise_for_status()
-		return response.json()
+		data = response.json()
+		if "success" in data and not data["success"]:
+			raise ValueError(f"Failed to get data from TMDB: {data}")
+		return data
 
 	@task
 	def get_export_ids(self, type: str, date: date) -> list:
@@ -63,4 +66,32 @@ class TMDBClient:
 			return export_ids
 		except Exception as e:
 			raise ValueError(f"Failed to get export ids: {e}")
+	
+	@task
+	def get_changed_ids(self, type: str, start_date: date, end_date: date) -> set:
+		try:
+			ids: set = set()
+			self.logger.info(f"Getting changed ids for {type} from {start_date} to {end_date}")
+
+			data = self.request(f"{type}/changes", {"start_date": start_date.strftime("%Y-%m-%d"), "end_date": end_date.strftime("%Y-%m-%d")})
+			numbers_of_pages = data["total_pages"]
+			number_of_results = data["total_results"]
+
+			responses = []
+			for i in range(1, numbers_of_pages+1):
+				responses.append(self.request.submit(f"{type}/changes", {"page": i, "start_date": start_date.strftime("%Y-%m-%d"), "end_date": end_date.strftime("%Y-%m-%d")}))
+
+			for i, response in enumerate(responses, start=1):
+				results = response.result()
+				if "results" in results:
+					ids |= set([item["id"] for item in results["results"]])
+				else:
+					raise ValueError(f"Failed to get changed ids for page {i}: {results}")
+			
+			if len(ids) != number_of_results:
+				raise ValueError(f"Number of ids does not match the number of results: {len(ids)} != {number_of_results}")
+
+			return ids
+		except Exception as e:
+			raise ValueError(f"Failed to get changed ids: {e}")
 	

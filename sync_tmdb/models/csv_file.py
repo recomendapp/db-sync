@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import uuid
 
+from ..utils.file_manager import remove_duplicates
+
 class CSVFile:
 	def __init__(self, columns: list, tmp_directory: str = None, prefix: str = "data"):
 		"""
@@ -65,3 +67,18 @@ class CSVFile:
 		"""
 		if os.path.exists(self.file_path):
 			os.remove(self.file_path)
+	
+	def is_empty(self) -> bool:
+		"""
+		Check if the CSV file is empty.
+
+		Returns:
+			bool: True if the file is empty, False otherwise.
+		"""
+		return os.stat(self.file_path).st_size == 0
+
+	def clean_duplicates(self, conflict_columns: list[str]):
+		"""
+		Clean the duplicates in the CSV file.
+		"""
+		remove_duplicates(input_file=self.file_path, output_file=self.file_path, conflict_columns=conflict_columns)
