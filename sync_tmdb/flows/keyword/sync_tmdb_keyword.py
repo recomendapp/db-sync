@@ -117,6 +117,9 @@ def sync_tmdb_keyword(date: date = date.today()):
 		extra_keywords: set = db_keywords_set - tmdb_keywords_set
 		missing_keywords: set = tmdb_keywords_set - db_keywords_set
 
+		print(extra_keywords)
+		print(missing_keywords)
+
 		# Process extra and missing keywords
 		config.log_manager.syncing_to_db()
 		process_extra_keywords(config, extra_keywords)

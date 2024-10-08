@@ -108,4 +108,24 @@ def decompress_file(file_path: str, deleteCompressedFile: bool = True) -> str:
 
 	return decompressed_file_path
 
+def remove_duplicates(input_file: str, output_file: str, conflict_columns: list):
+    """
+    Delete duplicates from a CSV file.
+
+    :param input_file: The path to the input CSV file.
+	:param output_file: The path to the output CSV file.
+	:param conflict_columns: The columns to use to detect duplicates.
+    """
+    try:
+        # Read the CSV file
+        df = pd.read_csv(input_file)
+
+        # Delete duplicates
+        df_cleaned = df.drop_duplicates(subset=conflict_columns, keep='first')
+
+        # Save the cleaned CSV file
+        df_cleaned.to_csv(output_file, index=False)
+    except Exception as e:
+        raise ValueError(f"Failed to remove duplicates: {e}")
+
 

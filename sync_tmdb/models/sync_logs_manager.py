@@ -7,8 +7,9 @@ class SyncLogsManager:
 		self.db_client = config.db_client
 		self.table = self.config.config.get("logs", {}).get("table", "sync_logs")
 		self.type: str = None
-		self.current_log = None
-		self.last_success_log = None
+		self.current_log: SyncLog = None
+		self.last_success_log: SyncLog = None
+		self.logger = self.config.logger
 	
 	def get_last_success_log(self, type: str, status: str = "success") -> SyncLog:
 		"""
@@ -46,6 +47,7 @@ class SyncLogsManager:
 				with conn.cursor() as cursor:
 					cursor.execute(f"UPDATE {self.table} SET status = %s WHERE id = %s", (status, self.current_log.id))
 					conn.commit()
+					self.logger.info(f"Log {self.current_log.id} updated to {status}")
 					self.current_log.status = status
 	
 	def delete_log(self, id: int) -> None:

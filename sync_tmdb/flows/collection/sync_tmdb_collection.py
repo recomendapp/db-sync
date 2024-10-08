@@ -10,10 +10,8 @@ import time
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
 from prefect.futures import wait
 
-from ...utils.file_manager import create_csv, get_csv_header
 from .config import CollectionConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
@@ -28,7 +26,6 @@ def get_tmdb_collections(config: CollectionConfig) -> set:
 	try:
 		tmdb_collections = config.tmdb_client.get_export_ids(type="collection", date=config.date)
 		tmdb_collections_set = set([item["id"] for item in tmdb_collections])
-
 		return tmdb_collections_set
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB collections: {e}")
@@ -47,85 +44,85 @@ def get_db_collections(config: CollectionConfig) -> set:
 @task
 def get_tmdb_collection_details(config: CollectionConfig, collection_id: int) -> dict:
 	try:
-		# Get collection details from TMDB in the default language and the extra languages
-		collection_details = {}
-		collection_details[config.default_language.code] = config.tmdb_client.request(f"collection/{collection_id}", {"language": config.default_language.tmdb_language})
+		collection_details = config.tmdb_client.request(f"collection/{collection_id}")
+		collection_translations = config.tmdb_client.request(f"collection/{collection_id}/translations")
+		collection_images = config.tmdb_client.request(f"collection/{collection_id}/images")
 
-		for language in config.extra_languages:
-			collection_details[language.code] = config.tmdb_client.request(f"collection/{collection_id}", {"language": language.tmdb_language})
-		
-		return collection_details
-			
+		return {
+			"details": collection_details,
+			"translations": collection_translations,
+			"images": collection_images
+		}
 	except Exception as e:
 		config.logger.error(f"Failed to get collection details for {collection_id}: {e}")
 		return None
 
 # ---------------------------------------------------------------------------- #
-
-def process_extra_collections(config: CollectionConfig, extra_collections: set):
-	try:
-		if len(extra_collections) > 0:
-			config.logger.warning(f"Found {len(extra_collections)} extra collections in the database")
-			with config.db_client.get_connection() as conn:
-				with conn.cursor() as cursor:
-					conn.autocommit = False
-					try:
-						cursor.execute(f"DELETE FROM {config.table_collection} WHERE id IN %s", (tuple(extra_collections),))
-						conn.commit()
-					except Exception as e:
-						conn.rollback()
-						raise
-	except Exception as e:
-		raise ValueError(f"Failed to process extra collections: {e}")
 	
-def process_missing_collections(config: CollectionConfig, missing_collections_set: set):
+def process_missing_collections(config: CollectionConfig):
 	try:
-		if len(missing_collections_set) > 0:
-			config.logger.warning(f"Found {len(missing_collections_set)} missing collections in the database")
+		if len(config.missing_collections) > 0:
+			chunks = list(chunked(config.missing_collections, 500))
 			submits = []
-			chunks = list(chunked(missing_collections_set, config.chunk_size))
 			for chunk in chunks:
-				collection_csv = CSVFile(columns=Mapper.collection_columns, tmp_directory=config.tmp_directory, prefix="collection")
-				collection_translation_csv = CSVFile(columns=Mapper.collection_translation_columns, tmp_directory=config.tmp_directory, prefix="collection_translation")
+				collection_csv = CSVFile(
+					columns=config.collection_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=config.flow_name
+				)
+				collection_translation_csv = CSVFile(
+					columns=config.collection_translation_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_translation"
+				)
+				collection_image_csv = CSVFile(
+					columns=config.collection_image_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_image"
+				)
 
 				collections_details_futures = get_tmdb_collection_details.map(config=config, collection_id=chunk)
 
 				for collection_details_response in collections_details_futures:
-					collection_details = collection_details_response.result()
-					if collection_details is not None:
-						collection_csv.append(rows_data=Mapper.collection(config=config, collection=collection_details))
-						collection_translation_csv.append(rows_data=Mapper.collection_translation(collection_details))
-				
-				submits.append(Mapper.push.submit(config=config, collection_csv=collection_csv, collection_translation_csv=collection_translation_csv))
+					collection_data = collection_details_response.result()
+					if collection_data is not None:
+						collection_csv.append(rows_data=Mapper.collection(collection=collection_data["details"]))
+						collection_translation_csv.append(rows_data=Mapper.collection_translation(collection_data["translations"]))
+						collection_image_csv.append(rows_data=Mapper.collection_image(collection=collection_data["images"]))
+
+				submits.append(config.push.submit(collection_csv=collection_csv, collection_translation_csv=collection_translation_csv, collection_image_csv=collection_image_csv))
 			
-			wait(submits) # wait for all the submits to finish
+			# Wait for all the submits to finish
+			wait(submits)
 	except Exception as e:
 		raise ValueError(f"Failed to process missing collections: {e}")
+	
+# ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb_collection", log_prints=True)
 def sync_tmdb_collection(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing collection for {date}...")
 	try:
+		# with CollectionConfig(date=date) as config:
 		config = CollectionConfig(date=date)
-
 		config.log_manager.init(type="tmdb_collection")
 
 		# Get the list of collection from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_collections_set = get_tmdb_collections(config)
 		db_collections_set = get_db_collections(config)
-	
-		# Compare the collections
-		extra_collections: set = db_collections_set - tmdb_collections_set
-		missing_collections: set = tmdb_collections_set - db_collections_set
+
+		# Compare the collections and process missing collections
+		config.extra_collections = db_collections_set - tmdb_collections_set
+		config.missing_collections = tmdb_collections_set - db_collections_set
+		logger.info(f"Found {len(config.extra_collections)} extra collections and {len(config.missing_collections)} missing collections")
 		config.log_manager.data_fetched()
 
-		# Process extra and missing collections
+		# Sync the collections to the database
 		config.log_manager.syncing_to_db()
-		process_extra_collections(config, extra_collections)
-		process_missing_collections(config, missing_collections)
-
+		config.prune()
+		process_missing_collections(config=config)
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
