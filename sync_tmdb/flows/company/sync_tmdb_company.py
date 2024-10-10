@@ -64,7 +64,7 @@ def get_tmdb_company_details(config: CompanyConfig, company_id: int) -> dict:
 def process_missing_companies(config: CompanyConfig):
 	try:
 		if len(config.missing_companies) > 0:
-			chunks = list(chunked(config.missing_companies, 500))
+			chunks = list(chunked(config.missing_companies, 100))
 			submits = []
 			for chunk in chunks:
 				company_csv = CSVFile(

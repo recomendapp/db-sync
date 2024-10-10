@@ -32,7 +32,7 @@ deployments:
   - tmdb
   description: Sync TMDB data
   schedules:
-  - cron: 0 9 * * *
+  - cron: 0 12 * * *
     timezone: Europe/Paris
     day_or: true
     active: true

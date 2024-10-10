@@ -135,7 +135,7 @@ class CompanyConfig(Config):
 						company_csv.delete()
 						company_image_csv.delete()
 						company_alternative_name_csv.delete()
-					except:
+					except Exception as e:
 						conn.rollback()
 						raise
 					finally:

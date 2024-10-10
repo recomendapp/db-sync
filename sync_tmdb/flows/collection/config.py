@@ -137,7 +137,7 @@ class CollectionConfig(Config):
 						collection_csv.delete()
 						collection_translation_csv.delete()
 						collection_image_csv.delete()
-					except:
+					except Exception as e:
 						conn.rollback()
 						raise
 					finally:

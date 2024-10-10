@@ -53,13 +53,9 @@ def get_tmdb_persons_changed(config: PersonConfig):
 def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 	try:
 		# Get persons details from TMDB in the default language and the extra languages
-		person_details = {}
-		person_details[config.default_language.code] = config.tmdb_client.request(f"person/{person_id}", {"language": config.default_language.tmdb_language})
+		person = config.tmdb_client.request(f"person/{person_id}", {"append_to_response": "images,external_ids,translations"})
 
-		for language in config.extra_languages:
-			person_details[language.code] = config.tmdb_client.request(f"person/{person_id}", {"language": language.tmdb_language})
-		
-		return person_details
+		return person
 	except Exception as e:
 		config.logger.error(f"Failed to get person details for {person_id}: {e}")
 		return None
@@ -69,15 +65,50 @@ def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 def process_missing_persons(config: PersonConfig):
 	try:
 		if len(config.missing_persons) > 0:
-			persons_details_futures = get_tmdb_person_details.map(config=config, person_id=config.missing_persons)
+			chunks = list(chunked(config.missing_persons, 100))
+			submits = []
+			for chunk in chunks:
+				person_csv = CSVFile(
+					columns=config.person_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=config.flow_name
+				)
+				person_translation_csv = CSVFile(
+					columns=config.person_translation_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_translation"
+				)
+				person_image_csv = CSVFile(
+					columns=config.person_image_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_image"
+				)
+				person_external_id_csv = CSVFile(
+					columns=config.person_external_id_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_external_ids"
+				)
+				person_also_known_as_csv = CSVFile(
+					columns=config.person_also_known_as_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_also_known_as"
+				)
 
-			for person_details_response in persons_details_futures:
-				person_details = person_details_response.result()
-				config.logger.info(f"Processing person {person_details}")
-				if person_details is not None:
-					config.person_csv.append(rows_data=Mapper.person(config=config, person=person_details))
-					config.person_translation_csv.append(rows_data=Mapper.person_translation(person=person_details))
+				persons_details_futures = get_tmdb_person_details.map(config=config, person_id=chunk)
 
+				for person_details_response in persons_details_futures:
+					person_details = person_details_response.result()
+					if person_details is not None:
+						person_csv.append(rows_data=Mapper.person(person=person_details))
+						person_translation_csv.append(rows_data=Mapper.person_translation(person=person_details))
+						person_image_csv.append(rows_data=Mapper.person_image(person=person_details))
+						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=person_details))
+						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=person_details))
+				
+				submits.append(config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv))
+			
+			# Wait for all the submits to finish
+			wait(submits)
 	except Exception as e:
 		raise ValueError(f"Failed to process missing persons: {e}")
 	
@@ -88,29 +119,26 @@ def sync_tmdb_person(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing person for {date}...")
 	try:
-		with PersonConfig(date=date) as config:
-			config.log_manager.init(type="tmdb_person")
+		config = PersonConfig(date=date)
+		config.log_manager.init(type="tmdb_person")
 
-			# Get the list of person from TMDB and the database
-			config.log_manager.fetching_data()
-			tmdb_persons_set = get_tmdb_persons(config)
-			db_persons_set = get_db_persons(config)
+		# Get the list of person from TMDB and the database
+		config.log_manager.fetching_data()
+		tmdb_persons_set = get_tmdb_persons(config)
+		db_persons_set = get_db_persons(config)
 
-			# Compare the persons and process missing persons
-			config.extra_persons = db_persons_set - tmdb_persons_set
-			config.missing_persons = tmdb_persons_set - db_persons_set
-			get_tmdb_persons_changed(config)
-			# get only 100 items from missing persons
-			config.missing_persons = set(list(config.missing_persons)[:5])
-			logger.info(f"Found {len(config.extra_persons)} extra persons and {len(config.missing_persons)} missing persons")
-			process_missing_persons(config=config)
-			config.log_manager.data_fetched()
+		# Compare the persons and process missing persons
+		config.extra_persons = db_persons_set - tmdb_persons_set
+		config.missing_persons = tmdb_persons_set - db_persons_set
+		get_tmdb_persons_changed(config)
+		logger.info(f"Found {len(config.extra_persons)} extra persons and {len(config.missing_persons)} missing persons")
+		config.log_manager.data_fetched()
 
-			# Sync the persons to the database
-			config.log_manager.syncing_to_db()
-			# config.prune()
-			# config.push()
-			config.log_manager.success()
+		# Sync the persons to the database
+		config.log_manager.syncing_to_db()
+		config.prune()
+		process_missing_persons(config=config)
+		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
 		logger.error(f"Syncing person failed: {e}")
