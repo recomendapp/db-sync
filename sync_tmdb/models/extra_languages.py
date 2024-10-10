@@ -6,8 +6,8 @@ class UnsupportedLanguage(Exception):
 class ExtraLanguages:
     # Dictionary of supported extra languages
 	supported_languages = {
-        'fr': Language(name='French', code='fr', tmdb_language='fr-FR'),
-		'es': Language(name='Spanish', code='es', tmdb_language='es-ES'),
+        'fr-FR': Language(name='French', code='fr-FR', tmdb_language='fr-FR'),
+		'es-ES': Language(name='Spanish', code='es-ES', tmdb_language='es-ES'),
         # Add more languages here
 	}
      

@@ -15,14 +15,14 @@ class Config:
 		self.logger = get_run_logger()
 		self.config = Variable.get("sync_tmdb_config", {})
 		self.tmp_directory: str = self.config.get("tmp_directory", ".tmp")
-		self.default_language = Language(name="English", code="en", tmdb_language="en-US")
+		self.default_language = Language(name="English", code="en-US", tmdb_language="en-US")
 		self.extra_languages = ExtraLanguages(languages=self.config.get("extra_languages", []))
 		self.db_client = DBClient()
 		self.tmdb_client = TMDBClient(config=self.config)
 		self.log_manager = SyncLogsManager(config=self)
 		self.chunk_size = self.config.get("chunk_size", 1000)
 
-	# def __del__(self):
-	# 	if self.tmp_directory and os.path.exists(self.tmp_directory):
-	# 		shutil.rmtree(self.tmp_directory)
+	def __del__(self):
+		if self.tmp_directory and os.path.exists(self.tmp_directory):
+			shutil.rmtree(self.tmp_directory)
 

@@ -1,6 +1,8 @@
 from datetime import date
+from prefect import task
 from ...models.config import Config
 from ...models.csv_file import CSVFile
+from ...utils.db import insert_into
 
 class PersonConfig(Config):
 	def __init__(self, date: date):
@@ -10,45 +12,36 @@ class PersonConfig(Config):
 		# Tables
 		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb_person")
 		self.table_person_translation: str = self.config.get("db_tables", {}).get("person_translation", "tmdb_person_translation")
+		self.table_person_image: str = self.config.get("db_tables", {}).get("person_image", "tmdb_person_image")
+		self.table_person_external_id: str = self.config.get("db_tables", {}).get("person_external_id", "tmdb_person_external_id")
+		self.table_person_also_known_as: str = self.config.get("db_tables", {}).get("person_also_known_as", "tmdb_person_also_known_as")
 
 		# Ids
 		self.extra_persons: set = None
 		self.missing_persons: set = None
 
 		# Columns
-		self.person_columns: list[str] = ["id", "adult", "also_known_as", "birthday", "deathday", "gender", "homepage", "imdb_id", "known_for_department", "name", "place_of_birth", "popularity", "profile_path"]
-		self.person_translation_columns: list[str] = ["person", "biography", "language"]
+		self.person_columns: list[str] = ["id", "adult", "birthday", "deathday", "gender", "homepage", "imdb_id", "known_for_department", "name", "place_of_birth", "popularity"]
+		self.person_translation_columns: list[str] = ["person", "biography", "iso_639_1", "iso_3166_1"]
+		self.person_image_columns: list[str] = ["person", "file_path", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
+		self.person_external_id_columns: list[str] = ["person", "source", "value"]
+		self.person_also_known_as_columns: list[str] = ["person", "name"]
 
 		# On conflict
 		self.person_on_conflict: list[str] = ["id"]
-		self.person_translation_on_conflict: list[str] = ["person", "language"]
+		self.person_translation_on_conflict: list[str] = ["person", "iso_639_1", "iso_3166_1"]
+		self.person_image_on_conflict: list[str] = ["person", "file_path"]
+		self.person_external_id_on_conflict: list[str] = ["person", "source"]
+		self.person_also_known_as_on_conflict: list[str] = ["person", "name"]
 
 		# On conflict update
 		self.person_on_conflict_update: list[str] = [col for col in self.person_columns if col not in self.person_on_conflict]
 		self.person_translation_on_conflict_update: list[str] = [col for col in self.person_translation_columns if col not in self.person_translation_on_conflict]
+		self.person_image_on_conflict_update: list[str] = [col for col in self.person_image_columns if col not in self.person_image_on_conflict]
+		self.person_external_id_on_conflict_update: list[str] = [col for col in self.person_external_id_columns if col not in self.person_external_id_on_conflict]
+		self.person_also_known_as_on_conflict_update: list[str] = [col for col in self.person_also_known_as_columns if col not in self.person_also_known_as_on_conflict]
 
-		# CSV file
-		self.person_csv: CSVFile = CSVFile(
-			columns=self.person_columns,
-			tmp_directory=self.tmp_directory,
-			prefix=self.flow_name
-		)
-		self.person_translation_csv: CSVFile = CSVFile(
-			columns=self.person_translation_columns,
-			tmp_directory=self.tmp_directory,
-			prefix=f"{self.flow_name}_translation"
-		)
-	
-	def __enter__(self):
-		return self
-	
-	def __exit__(self, exc_type, exc_value, traceback):
-		pass
-		# if self.person_csv:
-		# 	self.person_csv.delete()
-		# if self.person_translation_csv:
-		# 	self.person_translation_csv.delete()
-
+	@task
 	def prune(self):
 		"""Prune the extra persons from the database"""
 		try:
@@ -65,36 +58,144 @@ class PersonConfig(Config):
 		except Exception as e:
 			raise ValueError(f"Failed to prune extra persons: {e}")
 	
-	def push(self):
+	@task
+	def push(self, person_csv: CSVFile, person_translation_csv: CSVFile, person_image_csv: CSVFile, person_external_id_csv: CSVFile, person_also_known_as_csv: CSVFile):
 		"""Push the persons to the database"""
 		try:
+			# Clean duplicates from the CSV files
+			person_csv.clean_duplicates(conflict_columns=self.person_on_conflict)
+			person_translation_csv.clean_duplicates(conflict_columns=self.person_translation_on_conflict)
+			person_image_csv.clean_duplicates(conflict_columns=self.person_image_on_conflict)
+			person_external_id_csv.clean_duplicates(conflict_columns=self.person_external_id_on_conflict)
+			person_also_known_as_csv.clean_duplicates(conflict_columns=self.person_also_known_as_on_conflict)
+
 			with self.db_client.get_connection() as conn:
 				with conn.cursor() as cursor:
-					conn.autocommit = False
-					cursor.execute(f"""
-						CREATE TEMP TABLE temp_{self.bem} (LIKE {self.table_person} INCLUDING ALL);
-						CREATE TEMP TABLE temp_{self.table_person_translation} (LIKE {self.table_person_translation} INCLUDING ALL);
-					""")
+					try:
+						conn.autocommit = False
+						cursor.execute(f"""
+							CREATE TEMP TABLE temp_{self.table_person} (LIKE {self.table_person} INCLUDING ALL);
+							CREATE TEMP TABLE temp_{self.table_person_translation} (LIKE {self.table_person_translation} INCLUDING ALL);
+							CREATE TEMP TABLE temp_{self.table_person_image} (LIKE {self.table_person_image} INCLUDING ALL);
+							CREATE TEMP TABLE temp_{self.table_person_external_id} (LIKE {self.table_person_external_id} INCLUDING ALL);
+							CREATE TEMP TABLE temp_{self.table_person_also_known_as} (LIKE {self.table_person_also_known_as} INCLUDING ALL);
+						""")
 
-					with open(self.person_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY temp_{self.table_person} ({','.join(self.person_columns)}) FROM STDIN WITH CSV HEADER", f)
-					with open(self.person_translation_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY temp_{self.table_person_translation} ({','.join(self.person_translation_columns)}) FROM STDIN WITH CSV HEADER", f)
+						with open(person_csv.file_path, "r") as f:
+							cursor.copy_expert(f"COPY temp_{self.table_person} ({','.join(self.person_columns)}) FROM STDIN WITH CSV HEADER", f)
+						with open(person_translation_csv.file_path, "r") as f:
+							cursor.copy_expert(f"COPY temp_{self.table_person_translation} ({','.join(self.person_translation_columns)}) FROM STDIN WITH CSV HEADER", f)
+						with open(person_image_csv.file_path, "r") as f:
+							cursor.copy_expert(f"COPY temp_{self.table_person_image} ({','.join(self.person_image_columns)}) FROM STDIN WITH CSV HEADER", f)
+						with open(person_external_id_csv.file_path, "r") as f:
+							cursor.copy_expert(f"COPY temp_{self.table_person_external_id} ({','.join(self.person_external_id_columns)}) FROM STDIN WITH CSV HEADER", f)
+						with open(person_also_known_as_csv.file_path, "r") as f:
+							cursor.copy_expert(f"COPY temp_{self.table_person_also_known_as} ({','.join(self.person_also_known_as_columns)}) FROM STDIN WITH CSV HEADER", f)
 
-					cursor.execute(f"""
-						INSERT INTO {self.table_person} ({','.join(self.person_columns)})
-						SELECT {','.join(self.person_columns)} FROM temp_{self.table_person}
-						ON CONFLICT ({','.join(self.person_on_conflict)}) DO UPDATE
-						SET {','.join([f"{column}=EXCLUDED.{column}" for column in self.person_on_conflict_update])};
-					""")
+						insert_into(
+							cursor=cursor,
+							table=self.table_person,
+							temp_table=f"temp_{self.table_person}",
+							columns=self.person_columns,
+							on_conflict=self.person_on_conflict,
+							on_conflict_update=self.person_on_conflict_update
+						)
 
-					cursor.execute(f"""
-						INSERT INTO {self.table_person_translation} ({','.join(self.person_translation_columns)})
-						SELECT {','.join(self.person_translation_columns)} FROM temp_{self.table_person_translation}
-						ON CONFLICT ({','.join(self.person_translation_on_conflict)}) DO UPDATE
-						SET {','.join([f"{column}=EXCLUDED.{column}" for column in self.person_translation_on_conflict_update])};
-					""")
+						insert_into(
+							cursor=cursor,
+							table=self.table_person_translation,
+							temp_table=f"temp_{self.table_person_translation}",
+							columns=self.person_translation_columns,
+							on_conflict=self.person_translation_on_conflict,
+							on_conflict_update=self.person_translation_on_conflict_update
+						)
+
+						insert_into(
+							cursor=cursor,
+							table=self.table_person_image,
+							temp_table=f"temp_{self.table_person_image}",
+							columns=self.person_image_columns,
+							on_conflict=self.person_image_on_conflict,
+							on_conflict_update=self.person_image_on_conflict_update
+						)
+
+						insert_into(
+							cursor=cursor,
+							table=self.table_person_external_id,
+							temp_table=f"temp_{self.table_person_external_id}",
+							columns=self.person_external_id_columns,
+							on_conflict=self.person_external_id_on_conflict,
+							on_conflict_update=self.person_external_id_on_conflict_update
+						)
+
+						insert_into(
+							cursor=cursor,
+							table=self.table_person_also_known_as,
+							temp_table=f"temp_{self.table_person_also_known_as}",
+							columns=self.person_also_known_as_columns,
+							on_conflict=self.person_also_known_as_on_conflict,
+							on_conflict_update=self.person_also_known_as_on_conflict_update
+						)
+
+						# Delete outdated  translations
+						cursor.execute(f"""
+							DELETE FROM {self.table_person_translation}
+							WHERE ({','.join(self.person_translation_on_conflict)}) NOT IN (
+								SELECT {','.join(self.person_translation_on_conflict)}
+								FROM temp_{self.table_person_translation}
+							)
+							AND person IN (
+								SELECT id FROM temp_{self.table_person}
+							);
+						""")
+
+						# Delete outdated images
+						cursor.execute(f"""
+							DELETE FROM {self.table_person_image}
+							WHERE ({','.join(self.person_image_on_conflict)}) NOT IN (
+								SELECT {','.join(self.person_image_on_conflict)}
+								FROM temp_{self.table_person_image}
+							)
+							AND person IN (
+								SELECT id FROM temp_{self.table_person}
+							);
+						""")
+
+						# Delete outdated external ids
+						cursor.execute(f"""
+							DELETE FROM {self.table_person_external_id}
+							WHERE ({','.join(self.person_external_id_on_conflict)}) NOT IN (
+								SELECT {','.join(self.person_external_id_on_conflict)}
+								FROM temp_{self.table_person_external_id}
+							)
+							AND person IN (
+								SELECT id FROM temp_{self.table_person}
+							);
+						""")
+
+						# Delete outdated also known as
+						cursor.execute(f"""
+							DELETE FROM {self.table_person_also_known_as}
+							WHERE ({','.join(self.person_also_known_as_on_conflict)}) NOT IN (
+								SELECT {','.join(self.person_also_known_as_on_conflict)}
+								FROM temp_{self.table_person_also_known_as}
+							)
+							AND person IN (
+								SELECT id FROM temp_{self.table_person}
+							);
+						""")
 					
-					conn.commit()
+						conn.commit()
+
+						person_csv.delete()
+						person_translation_csv.delete()
+						person_image_csv.delete()
+						person_external_id_csv.delete()
+						person_also_known_as_csv.delete()
+					except Exception as e:
+						conn.rollback()
+						raise
+					finally:
+						conn.autocommit = True
 		except Exception as e:
 			raise ValueError(f"Failed to push persons to the database: {e}")

@@ -62,7 +62,7 @@ def get_tmdb_collection_details(config: CollectionConfig, collection_id: int) ->
 def process_missing_collections(config: CollectionConfig):
 	try:
 		if len(config.missing_collections) > 0:
-			chunks = list(chunked(config.missing_collections, 500))
+			chunks = list(chunked(config.missing_collections, 100))
 			submits = []
 			for chunk in chunks:
 				collection_csv = CSVFile(
