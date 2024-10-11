@@ -15,24 +15,34 @@ class SyncLogsManager:
 		"""
 		Get the last success log for the actual type
 		"""
-		with self.db_client.get_connection() as conn:
+		conn = self.db_client.get_connection()
+		try:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT id, type, status, date FROM {self.table} WHERE type = %s AND status = %s ORDER BY date DESC LIMIT 1", (type, status))
 				row = cursor.fetchone()
 				if row:
 					return SyncLog(id=row[0], type=row[1], status=row[2], date=row[3])
 				return None
+		except Exception as e:
+			raise ValueError(f"Failed to get last success log: {e}")
+		finally:
+			self.db_client.return_connection(conn)
 			
 	def create_log(self, type: str, status: str = "initialized") -> SyncLog:
 		"""
 		Create a new log for the actual date and type
 		"""
-		with self.db_client.get_connection() as conn:
+		conn = self.db_client.get_connection()
+		try:
 			with conn.cursor() as cursor:
 				cursor.execute(f"INSERT INTO {self.table} (type, status, date) VALUES (%s, %s, %s) RETURNING id", (type, status, self.config.date))
 				row = cursor.fetchone()
 				conn.commit()
 				return SyncLog(id=row[0], type=type, status=status, date=self.config.date)
+		except Exception as e:
+			raise ValueError(f"Failed to create log: {e}")
+		finally:
+			self.db_client.return_connection(conn)
 			
 	def update_log(self, status: str) -> None:
 		"""
@@ -43,21 +53,31 @@ class SyncLogsManager:
 		elif self.current_log is None:
 			self.init(type=self.type, status=status)
 		else:
-			with self.db_client.get_connection() as conn:
+			conn = self.db_client.get_connection()
+			try:
 				with conn.cursor() as cursor:
 					cursor.execute(f"UPDATE {self.table} SET status = %s WHERE id = %s", (status, self.current_log.id))
 					conn.commit()
 					self.logger.info(f"Log {self.current_log.id} updated to {status}")
 					self.current_log.status = status
+			except Exception as e:
+				raise ValueError(f"Failed to update log: {e}")
+			finally:
+				self.db_client.return_connection(conn)
 	
 	def delete_log(self, id: int) -> None:
 		"""
 		Delete a log by its id
 		"""
-		with self.db_client.get_connection() as conn:
+		conn = self.db_client.get_connection()
+		try:
 			with conn.cursor() as cursor:
 				cursor.execute(f"DELETE FROM {self.table} WHERE id = %s", (id,))
 				conn.commit()
+		except Exception as e:
+			raise ValueError(f"Failed to delete log: {e}")
+		finally:
+			self.db_client.return_connection(conn)
 
 	# ---------------------------------- Status ---------------------------------- #
 	def init(self, type: str, status: str = "initialized") -> None:

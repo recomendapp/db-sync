@@ -31,15 +31,17 @@ def get_tmdb_persons(config: PersonConfig) -> set:
 		raise ValueError(f"Failed to get TMDB persons: {e}")
 
 def get_db_persons(config: PersonConfig) -> set:
+	conn = config.db_client.get_connection()
 	try:
-		with config.db_client.get_connection() as conn:
-			with conn.cursor() as cursor:
-				cursor.execute(f"SELECT id FROM {config.table_person}")
-				db_persons = cursor.fetchall()
-				db_persons_set = set([item[0] for item in db_persons])
-				return db_persons_set
+		with conn.cursor() as cursor:
+			cursor.execute(f"SELECT id FROM {config.table_person}")
+			db_persons = cursor.fetchall()
+			db_persons_set = set([item[0] for item in db_persons])
+			return db_persons_set
 	except Exception as e:
 		raise ValueError(f"Failed to get database persons: {e}")
+	finally:
+		config.db_client.return_connection(conn)
 	
 def get_tmdb_persons_changed(config: PersonConfig):
 	try:
@@ -65,7 +67,7 @@ def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 def process_missing_persons(config: PersonConfig):
 	try:
 		if len(config.missing_persons) > 0:
-			chunks = list(chunked(config.missing_persons, 100))
+			chunks = list(chunked(config.missing_persons, 500))
 			submits = []
 			for chunk in chunks:
 				person_csv = CSVFile(

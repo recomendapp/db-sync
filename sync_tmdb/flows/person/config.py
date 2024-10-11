@@ -1,5 +1,6 @@
 from datetime import date
 from prefect import task
+import uuid
 from ...models.config import Config
 from ...models.csv_file import CSVFile
 from ...utils.db import insert_into
@@ -44,23 +45,26 @@ class PersonConfig(Config):
 	@task
 	def prune(self):
 		"""Prune the extra persons from the database"""
+		conn = self.db_client.get_connection()
 		try:
 			if len(self.extra_persons) > 0:
-				with self.db_client.get_connection() as conn:
-					with conn.cursor() as cursor:
-						conn.autocommit = False
-						try:
-							cursor.execute(f"DELETE FROM {self.table_person} WHERE id IN %s", (tuple(self.extra_persons),))
-							conn.commit()
-						except:
-							conn.rollback()
-							raise
+				with conn.cursor() as cursor:
+					conn.autocommit = False
+					try:
+						cursor.execute(f"DELETE FROM {self.table_person} WHERE id IN %s", (tuple(self.extra_persons),))
+						conn.commit()
+					except:
+						conn.rollback()
+						raise
 		except Exception as e:
 			raise ValueError(f"Failed to prune extra persons: {e}")
-	
+		finally:
+			self.db_client.return_connection(conn)
+
 	@task
 	def push(self, person_csv: CSVFile, person_translation_csv: CSVFile, person_image_csv: CSVFile, person_external_id_csv: CSVFile, person_also_known_as_csv: CSVFile):
 		"""Push the persons to the database"""
+		conn = self.db_client.get_connection()
 		try:
 			# Clean duplicates from the CSV files
 			person_csv.clean_duplicates(conflict_columns=self.person_on_conflict)
@@ -69,133 +73,140 @@ class PersonConfig(Config):
 			person_external_id_csv.clean_duplicates(conflict_columns=self.person_external_id_on_conflict)
 			person_also_known_as_csv.clean_duplicates(conflict_columns=self.person_also_known_as_on_conflict)
 
-			with self.db_client.get_connection() as conn:
-				with conn.cursor() as cursor:
-					try:
-						conn.autocommit = False
-						cursor.execute(f"""
-							CREATE TEMP TABLE temp_{self.table_person} (LIKE {self.table_person} INCLUDING ALL);
-							CREATE TEMP TABLE temp_{self.table_person_translation} (LIKE {self.table_person_translation} INCLUDING ALL);
-							CREATE TEMP TABLE temp_{self.table_person_image} (LIKE {self.table_person_image} INCLUDING ALL);
-							CREATE TEMP TABLE temp_{self.table_person_external_id} (LIKE {self.table_person_external_id} INCLUDING ALL);
-							CREATE TEMP TABLE temp_{self.table_person_also_known_as} (LIKE {self.table_person_also_known_as} INCLUDING ALL);
-						""")
+			with conn.cursor() as cursor:
+				try:
+					conn.autocommit = False
+					temp_person = f"temp_{self.table_person}_{uuid.uuid4().hex}"
+					temp_person_translation = f"temp_{self.table_person_translation}_{uuid.uuid4().hex}"
+					temp_person_image = f"temp_{self.table_person_image}_{uuid.uuid4().hex}"
+					temp_person_external_id = f"temp_{self.table_person_external_id}_{uuid.uuid4().hex}"
+					temp_person_also_known_as = f"temp_{self.table_person_also_known_as}_{uuid.uuid4().hex}"
 
-						with open(person_csv.file_path, "r") as f:
-							cursor.copy_expert(f"COPY temp_{self.table_person} ({','.join(self.person_columns)}) FROM STDIN WITH CSV HEADER", f)
-						with open(person_translation_csv.file_path, "r") as f:
-							cursor.copy_expert(f"COPY temp_{self.table_person_translation} ({','.join(self.person_translation_columns)}) FROM STDIN WITH CSV HEADER", f)
-						with open(person_image_csv.file_path, "r") as f:
-							cursor.copy_expert(f"COPY temp_{self.table_person_image} ({','.join(self.person_image_columns)}) FROM STDIN WITH CSV HEADER", f)
-						with open(person_external_id_csv.file_path, "r") as f:
-							cursor.copy_expert(f"COPY temp_{self.table_person_external_id} ({','.join(self.person_external_id_columns)}) FROM STDIN WITH CSV HEADER", f)
-						with open(person_also_known_as_csv.file_path, "r") as f:
-							cursor.copy_expert(f"COPY temp_{self.table_person_also_known_as} ({','.join(self.person_also_known_as_columns)}) FROM STDIN WITH CSV HEADER", f)
+					cursor.execute(f"""
+						CREATE TEMP TABLE {temp_person} (LIKE {self.table_person} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_person_translation} (LIKE {self.table_person_translation} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_person_image} (LIKE {self.table_person_image} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_person_external_id} (LIKE {self.table_person_external_id} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_person_also_known_as} (LIKE {self.table_person_also_known_as} INCLUDING ALL);
+					""")
 
-						insert_into(
-							cursor=cursor,
-							table=self.table_person,
-							temp_table=f"temp_{self.table_person}",
-							columns=self.person_columns,
-							on_conflict=self.person_on_conflict,
-							on_conflict_update=self.person_on_conflict_update
+					with open(person_csv.file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_person} ({','.join(self.person_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(person_translation_csv.file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_person_translation} ({','.join(self.person_translation_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(person_image_csv.file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_person_image} ({','.join(self.person_image_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(person_external_id_csv.file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_person_external_id} ({','.join(self.person_external_id_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(person_also_known_as_csv.file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_person_also_known_as} ({','.join(self.person_also_known_as_columns)}) FROM STDIN WITH CSV HEADER", f)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_person,
+						temp_table=temp_person,
+						columns=self.person_columns,
+						on_conflict=self.person_on_conflict,
+						on_conflict_update=self.person_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_person_translation,
+						temp_table=temp_person_translation,
+						columns=self.person_translation_columns,
+						on_conflict=self.person_translation_on_conflict,
+						on_conflict_update=self.person_translation_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_person_image,
+						temp_table=temp_person_image,
+						columns=self.person_image_columns,
+						on_conflict=self.person_image_on_conflict,
+						on_conflict_update=self.person_image_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_person_external_id,
+						temp_table=temp_person_external_id,
+						columns=self.person_external_id_columns,
+						on_conflict=self.person_external_id_on_conflict,
+						on_conflict_update=self.person_external_id_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_person_also_known_as,
+						temp_table=temp_person_also_known_as,
+						columns=self.person_also_known_as_columns,
+						on_conflict=self.person_also_known_as_on_conflict,
+						on_conflict_update=self.person_also_known_as_on_conflict_update
+					)
+
+					# Delete outdated  translations
+					cursor.execute(f"""
+						DELETE FROM {self.table_person_translation}
+						WHERE ({','.join(self.person_translation_on_conflict)}) NOT IN (
+							SELECT {','.join(self.person_translation_on_conflict)}
+							FROM {temp_person_translation}
 						)
+						AND person IN (
+							SELECT id FROM {temp_person}
+						);
+					""")
 
-						insert_into(
-							cursor=cursor,
-							table=self.table_person_translation,
-							temp_table=f"temp_{self.table_person_translation}",
-							columns=self.person_translation_columns,
-							on_conflict=self.person_translation_on_conflict,
-							on_conflict_update=self.person_translation_on_conflict_update
+					# Delete outdated images
+					cursor.execute(f"""
+						DELETE FROM {self.table_person_image}
+						WHERE ({','.join(self.person_image_on_conflict)}) NOT IN (
+							SELECT {','.join(self.person_image_on_conflict)}
+							FROM {temp_person_image}
 						)
+						AND person IN (
+							SELECT id FROM {temp_person}
+						);
+					""")
 
-						insert_into(
-							cursor=cursor,
-							table=self.table_person_image,
-							temp_table=f"temp_{self.table_person_image}",
-							columns=self.person_image_columns,
-							on_conflict=self.person_image_on_conflict,
-							on_conflict_update=self.person_image_on_conflict_update
+					# Delete outdated external ids
+					cursor.execute(f"""
+						DELETE FROM {self.table_person_external_id}
+						WHERE ({','.join(self.person_external_id_on_conflict)}) NOT IN (
+							SELECT {','.join(self.person_external_id_on_conflict)}
+							FROM {temp_person_external_id}
 						)
+						AND person IN (
+							SELECT id FROM {temp_person}
+						);
+					""")
 
-						insert_into(
-							cursor=cursor,
-							table=self.table_person_external_id,
-							temp_table=f"temp_{self.table_person_external_id}",
-							columns=self.person_external_id_columns,
-							on_conflict=self.person_external_id_on_conflict,
-							on_conflict_update=self.person_external_id_on_conflict_update
+					# Delete outdated also known as
+					cursor.execute(f"""
+						DELETE FROM {self.table_person_also_known_as}
+						WHERE ({','.join(self.person_also_known_as_on_conflict)}) NOT IN (
+							SELECT {','.join(self.person_also_known_as_on_conflict)}
+							FROM {temp_person_also_known_as}
 						)
+						AND person IN (
+							SELECT id FROM {temp_person}
+						);
+					""")
+				
+					conn.commit()
 
-						insert_into(
-							cursor=cursor,
-							table=self.table_person_also_known_as,
-							temp_table=f"temp_{self.table_person_also_known_as}",
-							columns=self.person_also_known_as_columns,
-							on_conflict=self.person_also_known_as_on_conflict,
-							on_conflict_update=self.person_also_known_as_on_conflict_update
-						)
-
-						# Delete outdated  translations
-						cursor.execute(f"""
-							DELETE FROM {self.table_person_translation}
-							WHERE ({','.join(self.person_translation_on_conflict)}) NOT IN (
-								SELECT {','.join(self.person_translation_on_conflict)}
-								FROM temp_{self.table_person_translation}
-							)
-							AND person IN (
-								SELECT id FROM temp_{self.table_person}
-							);
-						""")
-
-						# Delete outdated images
-						cursor.execute(f"""
-							DELETE FROM {self.table_person_image}
-							WHERE ({','.join(self.person_image_on_conflict)}) NOT IN (
-								SELECT {','.join(self.person_image_on_conflict)}
-								FROM temp_{self.table_person_image}
-							)
-							AND person IN (
-								SELECT id FROM temp_{self.table_person}
-							);
-						""")
-
-						# Delete outdated external ids
-						cursor.execute(f"""
-							DELETE FROM {self.table_person_external_id}
-							WHERE ({','.join(self.person_external_id_on_conflict)}) NOT IN (
-								SELECT {','.join(self.person_external_id_on_conflict)}
-								FROM temp_{self.table_person_external_id}
-							)
-							AND person IN (
-								SELECT id FROM temp_{self.table_person}
-							);
-						""")
-
-						# Delete outdated also known as
-						cursor.execute(f"""
-							DELETE FROM {self.table_person_also_known_as}
-							WHERE ({','.join(self.person_also_known_as_on_conflict)}) NOT IN (
-								SELECT {','.join(self.person_also_known_as_on_conflict)}
-								FROM temp_{self.table_person_also_known_as}
-							)
-							AND person IN (
-								SELECT id FROM temp_{self.table_person}
-							);
-						""")
-					
-						conn.commit()
-
-						person_csv.delete()
-						person_translation_csv.delete()
-						person_image_csv.delete()
-						person_external_id_csv.delete()
-						person_also_known_as_csv.delete()
-					except Exception as e:
-						conn.rollback()
-						raise
-					finally:
-						conn.autocommit = True
+					person_csv.delete()
+					person_translation_csv.delete()
+					person_image_csv.delete()
+					person_external_id_csv.delete()
+					person_also_known_as_csv.delete()
+				except Exception as e:
+					conn.rollback()
+					raise
+				finally:
+					conn.autocommit = True
 		except Exception as e:
 			raise ValueError(f"Failed to push persons to the database: {e}")
+		finally:
+			self.db_client.return_connection(conn)

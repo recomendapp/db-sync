@@ -31,15 +31,17 @@ def get_tmdb_collections(config: CollectionConfig) -> set:
 		raise ValueError(f"Failed to get TMDB collections: {e}")
 
 def get_db_collections(config: CollectionConfig) -> set:
+	conn = config.db_client.get_connection()
 	try:
-		with config.db_client.get_connection() as conn:
-			with conn.cursor() as cursor:
-				cursor.execute(f"SELECT id FROM {config.table_collection}")
-				db_collections = cursor.fetchall()
-				db_collections_set = set([item[0] for item in db_collections])
-				return db_collections_set
+		with conn.cursor() as cursor:
+			cursor.execute(f"SELECT id FROM {config.table_collection}")
+			db_collections = cursor.fetchall()
+			db_collections_set = set([item[0] for item in db_collections])
+			return db_collections_set
 	except Exception as e:
 		raise ValueError(f"Failed to get database collections: {e}")
+	finally:
+		config.db_client.return_connection(conn)
 
 @task
 def get_tmdb_collection_details(config: CollectionConfig, collection_id: int) -> dict:
