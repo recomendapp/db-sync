@@ -34,15 +34,17 @@ def get_tmdb_companies(config: CompanyConfig) -> set:
 		raise ValueError(f"Failed to get TMDB companies: {e}")
 
 def get_db_companies(config: CompanyConfig) -> set:
+	conn = config.db_client.get_connection()
 	try:
-		with config.db_client.get_connection() as conn:
-			with conn.cursor() as cursor:
-				cursor.execute(f"SELECT id FROM {config.table_company}")
-				db_companies = cursor.fetchall()
-				db_companies_set = set([item[0] for item in db_companies])
-				return db_companies_set
+		with conn.cursor() as cursor:
+			cursor.execute(f"SELECT id FROM {config.table_company}")
+			db_companies = cursor.fetchall()
+			db_companies_set = set([item[0] for item in db_companies])
+			return db_companies_set
 	except Exception as e:
 		raise ValueError(f"Failed to get database companies: {e}")
+	finally:
+		config.db_client.return_connection(conn)
 
 @task
 def get_tmdb_company_details(config: CompanyConfig, company_id: int) -> dict:
