@@ -153,5 +153,5 @@ def sync_tmdb_genre(date: date = date.today()):
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
-		logger.error(f"Syncing genre failed: {e}")
+		raise ValueError(f"Failed to sync genre: {e}")
 

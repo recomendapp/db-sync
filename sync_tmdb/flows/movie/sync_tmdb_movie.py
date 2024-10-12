@@ -12,7 +12,7 @@ from prefect import flow, task
 from prefect.logging import get_run_logger
 from prefect.futures import wait
 
-from .config import PersonConfig
+from .config import MovieConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
 
@@ -22,7 +22,7 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_persons(config: PersonConfig) -> set:
+def get_tmdb_persons(config: MovieConfig) -> set:
 	try:
 		tmdb_persons = config.tmdb_client.get_export_ids(type="person", date=config.date)
 		tmdb_persons_set = set([item["id"] for item in tmdb_persons])
@@ -30,7 +30,7 @@ def get_tmdb_persons(config: PersonConfig) -> set:
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB persons: {e}")
 
-def get_db_persons(config: PersonConfig) -> set:
+def get_db_persons(config: MovieConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
@@ -43,7 +43,7 @@ def get_db_persons(config: PersonConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 	
-def get_tmdb_persons_changed(config: PersonConfig):
+def get_tmdb_persons_changed(config: MovieConfig):
 	try:
 		config.logger.info("Getting changed persons...")
 		changed_persons = config.tmdb_client.get_changed_ids(type="person", start_date=config.log_manager.last_success_log.date, end_date=config.date)
@@ -52,7 +52,7 @@ def get_tmdb_persons_changed(config: PersonConfig):
 		raise ValueError(f"Failed to get changed persons: {e}")
 
 @task
-def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
+def get_tmdb_person_details(config: MovieConfig, person_id: int) -> dict:
 	try:
 		# Get persons details from TMDB in the default language and the extra languages
 		person = config.tmdb_client.request(f"person/{person_id}", {"append_to_response": "images,external_ids,translations"})
@@ -64,7 +64,7 @@ def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 
 # ---------------------------------------------------------------------------- #
 	
-def process_missing_persons(config: PersonConfig):
+def process_missing_persons(config: MovieConfig):
 	try:
 		if len(config.missing_persons) > 0:
 			chunks = list(chunked(config.missing_persons, 500))
@@ -116,12 +116,12 @@ def process_missing_persons(config: PersonConfig):
 	
 # ---------------------------------------------------------------------------- #
 
-@flow(name="sync_tmdb_person", log_prints=True)
-def sync_tmdb_person(date: date = date.today()):
+@flow(name="sync_tmdb_movie", log_prints=True)
+def sync_tmdb_movie(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing person for {date}...")
 	try:
-		config = PersonConfig(date=date)
+		config = MovieConfig(date=date)
 		config.log_manager.init(type="tmdb_person")
 
 		# Get the list of person from TMDB and the database

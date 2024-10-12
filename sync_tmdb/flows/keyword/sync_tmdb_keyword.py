@@ -125,5 +125,5 @@ def sync_tmdb_keyword(date: date = date.today()):
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
-		logger.error(f"Syncing keyword failed: {e}")
+		raise ValueError(f"Failed to sync keyword: {e}")
 

@@ -128,5 +128,5 @@ def sync_tmdb_collection(date: date = date.today()):
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
-		logger.error(f"Syncing collection failed: {e}")
+		raise ValueError(f"Failed to sync collection: {e}")
 
