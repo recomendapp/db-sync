@@ -33,7 +33,7 @@ class TMDBClient:
 	
 	@task 
 	def request(self, endpoint: str, params: dict = {}) -> dict:
-		rate_limit("tmdb-api")
+		# rate_limit("tmdb-api")
 		self.api_key = self._get_next_api_key()
 		url = f"{self.base_url}/{endpoint}"
 		params["api_key"] = self.api_key
