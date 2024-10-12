@@ -132,5 +132,5 @@ def sync_tmdb_country(date: date = date.today()):
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
-		logger.error(f"Syncing country failed: {e}")
+		raise ValueError(f"Failed to sync country: {e}")
 
