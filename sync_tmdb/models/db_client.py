@@ -20,3 +20,14 @@ class DBClient:
 
 	def close_connection(self):
 		self.connection_pool.closeall()
+
+	def get_table(self, table_name: str, columns: list) -> list:
+		conn = self.get_connection()
+		try:
+			with conn.cursor() as cursor:
+				cursor.execute(f"SELECT {', '.join(columns)} FROM {table_name}")
+				return cursor.fetchall()
+		except Exception as e:
+			raise ValueError(f"Failed to get table {table_name}: {e}")
+		finally:
+			self.return_connection(conn)

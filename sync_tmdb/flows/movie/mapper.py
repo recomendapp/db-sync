@@ -3,86 +3,109 @@ from .config import MovieConfig as Config
 
 class Mapper:
 	@staticmethod
-	def person(person: dict) -> pd.DataFrame:
-		person_data = [
+	def movie(movie: dict) -> pd.DataFrame:
+		movie_data = [
 			{
-				"id": person["id"],
-				"adult": person.get("adult", False),
-				"birthday": person.get("birthday", None),
-				"deathday": person.get("deathday", None),
-				"gender": person.get("gender", None),
-				"homepage": person.get("homepage", None),
-				"imdb_id": person.get("imdb_id", None),
-				"known_for_department": person.get("known_for_department", None),
-				"name": person.get("name", None),
-				"place_of_birth": person.get("place_of_birth", None),
-				"popularity": person.get("popularity", None)
+				"id": movie["id"],
+				"adult": movie.get("adult", False),
+				"budget": movie.get("budget", None),
+				"collection": movie.get("belongs_to_collection", {}).get("id", None),
+				"original_language": movie.get("original_language", None),
+				"original_title": movie.get("original_title", None),
+				"popularity": movie.get("popularity", None),
+				"release_date": movie.get("release_date", None),
+				"revenue": movie.get("revenue", None),
+				# "runtime": movie.get("runtime", None), (inside translations)
+				"status": movie.get("status", None),
+				# "title": movie.get("title", None), (inside translations)
+				# "video": movie.get("video", False), (inside videos)
+				"vote_average": movie.get("vote_average", None),
+				"vote_count": movie.get("vote_count", None),
 			}
 		]
-		return pd.DataFrame(person_data)
+		return pd.DataFrame(movie_data)
 
 	@staticmethod
-	def person_translation(person: dict) -> pd.DataFrame:
-		person_translation_data = [
+	def movie_translation(movie: dict) -> pd.DataFrame:
+		movie_translation_data = [
 			{
-				"person": person["id"],
-				"biography": translation["data"].get("biography", None),
+				"movie": movie["id"],
+				"homepage": translation["data"].get("homepage", None),
+				"overview": translation["data"].get("overview", None),
+				"runtime": translation["data"].get("runtime", None) if translation["data"].get("runtime", None) != 0 else None,
+				"tagline": translation["data"].get("tagline", None),
+				"title": translation["data"].get("title", None),
 				"iso_639_1": translation["iso_639_1"],
 				"iso_3166_1": translation["iso_3166_1"]
 			}
-			for translation in person.get("translations", {}).get("translations", [])
-			if translation["data"].get("biography")
+			for translation in movie.get("translations", {}).get("translations", [])
+			if translation["data"].get("homepage", None) or translation["data"].get("overview", None) or translation["data"].get("runtime", None) or translation["data"].get("tagline", None) or translation["data"].get("title", None)
 		]
 
-		return pd.DataFrame(person_translation_data)
+		return pd.DataFrame(movie_translation_data)
 
 	@staticmethod
-	def person_image(person: dict) -> pd.DataFrame:
-		personId = person["id"]
-		images = person.get("images", {}).get("profiles", [])
-		person_image_data = [
+	def movie_image(movie: dict) -> pd.DataFrame:
+		movieId = movie["id"]
+		images = movie.get("images", {})
+		movie_image_data = [
 			{
-				"person": personId,
+				"movie": movieId,
 				"file_path": image["file_path"],
-				"aspect_ratio": image.get("aspect_ratio", None),
-				"height": image.get("height", None),
-				"width": image.get("width", None),
-				"vote_average": image.get("vote_average", None),
-				"vote_count": image.get("vote_count", None)
+				"type": "backdrop",
+				"aspect_ratio": image["aspect_ratio"],
+				"height": image["height"],
+				"width": image["width"],
+				"vote_average": image["vote_average"],
+				"vote_count": image["vote_count"],
+				"iso_639_1": image["iso_639_1"]
 			}
-			for image in images
+			for image in images["backdrops"]
+		] + [
+			{
+				"movie": movieId,
+				"file_path": image["file_path"],
+				"type": "poster",
+				"aspect_ratio": image["aspect_ratio"],
+				"height": image["height"],
+				"width": image["width"],
+				"vote_average": image["vote_average"],
+				"vote_count": image["vote_count"],
+				"iso_639_1": image["iso_639_1"]
+			}
+			for image in images["posters"]
+		] + [
+			{
+				"movie": movieId,
+				"file_path": image["file_path"],
+				"type": "logo",
+				"aspect_ratio": image["aspect_ratio"],
+				"height": image["height"],
+				"width": image["width"],
+				"vote_average": image["vote_average"],
+				"vote_count": image["vote_count"],
+				"iso_639_1": image["iso_639_1"]
+			}
+			for image in images["logos"]
 		]
 
-		return pd.DataFrame(person_image_data)
+		return pd.DataFrame(movie_image_data)
 	
 	@staticmethod
-	def person_external_id(person: dict) -> pd.DataFrame:
-		personId = person["id"]
-		external_ids = person.get("external_ids", {})
-		person_external_id_data = [
+	def movie_alternative_titles(movie: dict) -> pd.DataFrame:
+		movieId = movie["id"]
+		alternative_titles = movie.get("alternative_titles", {}).get("titles", {})
+		movie_alternative_titles_data = [
 			{
-				"person": personId,
-				"source": source.replace("_id", "") if source.endswith("_id") else source,
-				"value": external_ids[source]
+				"movie": movieId,
+				"iso_3166_1": alternative_title["iso_3166_1"],
+				"title": alternative_title["title"],
+				"type": alternative_title["type"]
 			}
-			for source in external_ids
-			if external_ids[source]
+			for alternative_title in alternative_titles
 		]
 
-		return pd.DataFrame(person_external_id_data)
+		return pd.DataFrame(movie_alternative_titles_data)
+
 	
-	@staticmethod
-	def person_also_known_as(person: dict) -> pd.DataFrame:
-		personId = person["id"]
-		also_known_as = person.get("also_known_as", [])
-		person_also_known_as_data = [
-			{
-				"person": personId,
-				"name": name
-			}
-			for name in also_known_as
-		]
-
-		return pd.DataFrame(person_also_known_as_data)
-
 	
