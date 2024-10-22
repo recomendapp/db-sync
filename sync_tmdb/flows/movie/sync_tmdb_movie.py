@@ -22,126 +22,108 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_persons(config: MovieConfig) -> set:
+def get_tmdb_movies(config: MovieConfig) -> set:
 	try:
-		tmdb_persons = config.tmdb_client.get_export_ids(type="person", date=config.date)
-		tmdb_persons_set = set([item["id"] for item in tmdb_persons])
-		return tmdb_persons_set
+		tmdb_movies = config.tmdb_client.get_export_ids(type="movie", date=config.date)
+		tmdb_movies_set = set([item["id"] for item in tmdb_movies])
+		return tmdb_movies_set
 	except Exception as e:
-		raise ValueError(f"Failed to get TMDB persons: {e}")
+		raise ValueError(f"Failed to get TMDB movies: {e}")
 
-def get_db_persons(config: MovieConfig) -> set:
+def get_db_movies(config: MovieConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id FROM {config.table_person}")
-			db_persons = cursor.fetchall()
-			db_persons_set = set([item[0] for item in db_persons])
-			return db_persons_set
+			cursor.execute(f"SELECT id FROM {config.table_movie}")
+			db_movies = cursor.fetchall()
+			db_movies_set = set([item[0] for item in db_movies])
+			return db_movies_set
 	except Exception as e:
-		raise ValueError(f"Failed to get database persons: {e}")
+		raise ValueError(f"Failed to get database movies: {e}")
 	finally:
 		config.db_client.return_connection(conn)
 	
-def get_tmdb_persons_changed(config: MovieConfig):
+def get_tmdb_movies_changed(config: MovieConfig):
 	try:
-		config.logger.info("Getting changed persons...")
-		changed_persons = config.tmdb_client.get_changed_ids(type="person", start_date=config.log_manager.last_success_log.date, end_date=config.date)
-		config.missing_persons |= changed_persons
+		config.logger.info("Getting changed movies...")
+		changed_movies = config.tmdb_client.get_changed_ids(type="movie", start_date=config.log_manager.last_success_log.date, end_date=config.date)
+		config.missing_movies |= changed_movies
 	except Exception as e:
-		raise ValueError(f"Failed to get changed persons: {e}")
+		raise ValueError(f"Failed to get changed movies: {e}")
 
 @task
-def get_tmdb_person_details(config: MovieConfig, person_id: int) -> dict:
+def get_tmdb_movie_details(config: MovieConfig, movie_id: int) -> dict:
 	try:
-		# Get persons details from TMDB in the default language and the extra languages
-		person = config.tmdb_client.request(f"person/{person_id}", {"append_to_response": "images,external_ids,translations"})
+		movie = config.tmdb_client.request(f"movie/{movie_id}", {"append_to_response": "alternative_titles,credits,external_ids,keywords,release_dates,translations,images,videos", "include_image_language": "null", "include_video_language": "null"})
 
-		return person
+		return movie
 	except Exception as e:
-		config.logger.error(f"Failed to get person details for {person_id}: {e}")
+		config.logger.error(f"Failed to get movie details for {movie_id}: {e}")
 		return None
 
 # ---------------------------------------------------------------------------- #
 	
-def process_missing_persons(config: MovieConfig):
+def process_missing_movies(config: MovieConfig):
 	try:
-		if len(config.missing_persons) > 0:
-			chunks = list(chunked(config.missing_persons, 500))
+		if len(config.missing_movies) > 0:
+			config.get_db_data()
+			chunks = list(chunked(config.missing_movies, 500))
 			submits = []
 			for chunk in chunks:
-				person_csv = CSVFile(
-					columns=config.person_columns,
+				csv: dict[str, CSVFile] = {}
+				csv["movie"] = CSVFile(
+					columns=config.movie_columns,
 					tmp_directory=config.tmp_directory,
 					prefix=config.flow_name
 				)
-				person_translation_csv = CSVFile(
-					columns=config.person_translation_columns,
-					tmp_directory=config.tmp_directory,
-					prefix=f"{config.flow_name}_translation"
-				)
-				person_image_csv = CSVFile(
-					columns=config.person_image_columns,
-					tmp_directory=config.tmp_directory,
-					prefix=f"{config.flow_name}_image"
-				)
-				person_external_id_csv = CSVFile(
-					columns=config.person_external_id_columns,
-					tmp_directory=config.tmp_directory,
-					prefix=f"{config.flow_name}_external_ids"
-				)
-				person_also_known_as_csv = CSVFile(
-					columns=config.person_also_known_as_columns,
-					tmp_directory=config.tmp_directory,
-					prefix=f"{config.flow_name}_also_known_as"
-				)
-
-				persons_details_futures = get_tmdb_person_details.map(config=config, person_id=chunk)
-
-				for person_details_response in persons_details_futures:
-					person_details = person_details_response.result()
-					if person_details is not None:
-						person_csv.append(rows_data=Mapper.person(person=person_details))
-						person_translation_csv.append(rows_data=Mapper.person_translation(person=person_details))
-						person_image_csv.append(rows_data=Mapper.person_image(person=person_details))
-						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=person_details))
-						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=person_details))
 				
-				submits.append(config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv))
+
+				movies_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
+
+				for movie_details_response in movies_details_futures:
+					movie_details = movie_details_response.result()
+					if movie_details is not None:
+						person_csv.append(rows_data=Mapper.person(person=movie_details))
+						person_translation_csv.append(rows_data=Mapper.person_translation(person=movie_details))
+						person_image_csv.append(rows_data=Mapper.person_image(person=movie_details))
+						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=movie_details))
+						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=movie_details))
+				
+				submits.append(config.push.submit(csv=csv))
 			
 			# Wait for all the submits to finish
 			wait(submits)
 	except Exception as e:
-		raise ValueError(f"Failed to process missing persons: {e}")
+		raise ValueError(f"Failed to process missing movies: {e}")
 	
 # ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb_movie", log_prints=True)
 def sync_tmdb_movie(date: date = date.today()):
 	logger = get_run_logger()
-	logger.info(f"Syncing person for {date}...")
+	logger.info(f"Syncing movie for {date}...")
 	try:
 		config = MovieConfig(date=date)
-		config.log_manager.init(type="tmdb_person")
+		config.log_manager.init(type="tmdb_movie")
 
-		# Get the list of person from TMDB and the database
+		# Get the list of movie from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_persons_set = get_tmdb_persons(config)
-		db_persons_set = get_db_persons(config)
+		tmdb_movies_set = get_tmdb_movies(config)
+		db_movies_set = get_db_movies(config)
 
-		# Compare the persons and process missing persons
-		config.extra_persons = db_persons_set - tmdb_persons_set
-		config.missing_persons = tmdb_persons_set - db_persons_set
-		get_tmdb_persons_changed(config)
-		logger.info(f"Found {len(config.extra_persons)} extra persons and {len(config.missing_persons)} missing persons")
+		# Compare the movies and process missing movies
+		config.extra_movies = db_movies_set - tmdb_movies_set
+		config.missing_movies = tmdb_movies_set - db_movies_set
+		get_tmdb_movies_changed(config)
+		logger.info(f"Found {len(config.extra_movies)} extra movies and {len(config.missing_movies)} missing movies")
 		config.log_manager.data_fetched()
 
-		# Sync the persons to the database
+		# Sync the movies to the database
 		config.log_manager.syncing_to_db()
 		config.prune()
-		process_missing_persons(config=config)
+		process_missing_movies(config=config)
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
-		raise ValueError(f"Failed to sync person: {e}")
+		raise ValueError(f"Failed to sync movie: {e}")
 

@@ -22,7 +22,8 @@ class Config:
 		self.log_manager = SyncLogsManager(config=self)
 		self.chunk_size = self.config.get("chunk_size", 1000)
 
-	def __del__(self):
-		if self.tmp_directory and os.path.exists(self.tmp_directory):
-			shutil.rmtree(self.tmp_directory)
+	# def __del__(self):
+	# 	self.logger.info("Cleaning up...")
+	# 	if self.tmp_directory and os.path.exists(self.tmp_directory):
+	# 		shutil.rmtree(self.tmp_directory)
 
