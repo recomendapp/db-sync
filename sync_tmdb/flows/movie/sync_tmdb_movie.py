@@ -54,8 +54,12 @@ def get_tmdb_movies_changed(config: MovieConfig):
 @task
 def get_tmdb_movie_details(config: MovieConfig, movie_id: int) -> dict:
 	try:
-		movie = config.tmdb_client.request(f"movie/{movie_id}", {"append_to_response": "alternative_titles,credits,external_ids,keywords,release_dates,translations,images,videos", "include_image_language": "null", "include_video_language": "null"})
-
+		main_video_languages = "en,fr,es,ja,de"
+		# TMDB limit the number of languages to 5 
+		movie = config.tmdb_client.request(f"movie/{movie_id}", {"append_to_response": "alternative_titles,credits,external_ids,keywords,release_dates,translations,videos", "include_video_language": main_video_languages})
+		images = config.tmdb_client.request(f"movie/{movie_id}/images")
+		# Add images to the movie details
+		movie["images"] = images
 		return movie
 	except Exception as e:
 		config.logger.error(f"Failed to get movie details for {movie_id}: {e}")
@@ -76,18 +80,98 @@ def process_missing_movies(config: MovieConfig):
 					tmp_directory=config.tmp_directory,
 					prefix=config.flow_name
 				)
-				
+				csv["movie_alternative_titles"] = CSVFile(
+					columns=config.movie_alternative_titles_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_alternative_titles"
+				)
+				csv["movie_credits"] = CSVFile(
+					columns=config.movie_credits_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_credits"
+				)
+				csv["movie_external_ids"] = CSVFile(
+					columns=config.movie_external_ids_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_external_ids"
+				)
+				csv["movie_genres"] = CSVFile(
+					columns=config.movie_genres_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_genres"
+				)
+				csv["movie_images"] = CSVFile(
+					columns=config.movie_images_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_images"
+				)
+				csv["movie_keywords"] = CSVFile(
+					columns=config.movie_keywords_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_keywords"
+				)
+				csv["movie_origin_country"] = CSVFile(
+					columns=config.movie_origin_country_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_origin_country"
+				)
+				csv["movie_production_companies"] = CSVFile(
+					columns=config.movie_production_companies_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_production_companies"
+				)
+				csv["movie_production_countries"] = CSVFile(
+					columns=config.movie_production_countries_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_production_countries"
+				)
+				csv["movie_release_dates"] = CSVFile(
+					columns=config.movie_release_dates_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_release_dates"
+				)
+				csv["movie_roles"] = CSVFile(
+					columns=config.movie_roles_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_roles"
+				)
+				csv["movie_spoken_languages"] = CSVFile(
+					columns=config.movie_spoken_languages_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_spoken_languages"
+				)
+				csv["movie_translations"] = CSVFile(
+					columns=config.movie_translations_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_translations"
+				)
+				csv["movie_videos"] = CSVFile(
+					columns=config.movie_videos_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_videos"
+				)
 
 				movies_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
 
 				for movie_details_response in movies_details_futures:
 					movie_details = movie_details_response.result()
 					if movie_details is not None:
-						person_csv.append(rows_data=Mapper.person(person=movie_details))
-						person_translation_csv.append(rows_data=Mapper.person_translation(person=movie_details))
-						person_image_csv.append(rows_data=Mapper.person_image(person=movie_details))
-						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=movie_details))
-						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=movie_details))
+						csv["movie"].append(rows_data=Mapper.movie(config=config,movie=movie_details))
+						csv["movie_alternative_titles"].append(rows_data=Mapper.movie_alternative_titles(config=config,movie=movie_details))
+						movie_credits_df, movie_roles_df = Mapper.movie_credits(config=config,movie=movie_details)
+						csv["movie_credits"].append(rows_data=movie_credits_df)
+						csv["movie_roles"].append(rows_data=movie_roles_df)
+						csv["movie_external_ids"].append(rows_data=Mapper.movie_external_ids(config=config,movie=movie_details))
+						csv["movie_genres"].append(rows_data=Mapper.movie_genres(config=config,movie=movie_details))
+						csv["movie_images"].append(rows_data=Mapper.movie_images(config=config,movie=movie_details))
+						csv["movie_keywords"].append(rows_data=Mapper.movie_keywords(config=config,movie=movie_details))
+						csv["movie_origin_country"].append(rows_data=Mapper.movie_origin_country(config=config,movie=movie_details))
+						csv["movie_production_companies"].append(rows_data=Mapper.movie_production_companies(config=config,movie=movie_details))
+						csv["movie_production_countries"].append(rows_data=Mapper.movie_production_countries(config=config,movie=movie_details))
+						csv["movie_release_dates"].append(rows_data=Mapper.movie_release_dates(config=config,movie=movie_details))
+						csv["movie_spoken_languages"].append(rows_data=Mapper.movie_spoken_languages(config=config,movie=movie_details))
+						csv["movie_translations"].append(rows_data=Mapper.movie_translations(config=config,movie=movie_details))
+						csv["movie_videos"].append(rows_data=Mapper.movie_videos(config=config,movie=movie_details))
 				
 				submits.append(config.push.submit(csv=csv))
 			
