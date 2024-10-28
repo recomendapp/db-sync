@@ -8,10 +8,8 @@ class LanguageConfig(Config):
 
 		# Tables
 		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
-		self.table_language_translation: str = self.config.get("db_tables", {}).get("language_translation", "tmdb_language_translation")
 
-		# CSV file containing the missing languages
-		self.language: str = None
-		self.language_translation: str = None
+		# Columns
+		self.language_column: str = "iso_639_1"
 
 

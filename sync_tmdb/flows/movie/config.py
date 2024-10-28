@@ -22,18 +22,20 @@ class MovieConfig(Config):
 
 		# Tables
 		self.table_movie: str = self.config.get("db_tables", {}).get("movie", "tmdb_movie")
-		self.table_movie_translation: str = self.config.get("db_tables", {}).get("movie_translation", "tmdb_movie_translation")
-		self.table_movie_image: str = self.config.get("db_tables", {}).get("movie_image", "tmdb_movie_image")
-		self.table_movie_video: str = self.config.get("db_tables", {}).get("movie_video", "tmdb_movie_video")
-		self.table_movie_external_id: str = self.config.get("db_tables", {}).get("movie_external_id", "tmdb_movie_external_id")
-		self.table_movie_keyword: str = self.config.get("db_tables", {}).get("movie_keyword", "tmdb_movie_keyword")
-		self.table_movie_genre: str = self.config.get("db_tables", {}).get("movie_genre", "tmdb_movie_genre")
-		self.table_movie_production: str = self.config.get("db_tables", {}).get("movie_production", "tmdb_movie_production")
-		self.table_movie_language: str = self.config.get("db_tables", {}).get("movie_language", "tmdb_movie_language")
-		self.table_movie_country: str = self.config.get("db_tables", {}).get("movie_country", "tmdb_movie_country")
-		self.table_movie_credit: str = self.config.get("db_tables", {}).get("movie_credit", "tmdb_movie_credit")
-		self.table_movie_role: str = self.config.get("db_tables", {}).get("movie_role", "tmdb_movie_role")
-		
+		self.table_movie_alternative_titles: str = self.config.get("db_tables", {}).get("movie_alternative_titles", "tmdb_movie_alternative_titles")
+		self.table_movie_credits: str = self.config.get("db_tables", {}).get("movie_credits", "tmdb_movie_credits")
+		self.table_movie_external_ids: str = self.config.get("db_tables", {}).get("movie_external_ids", "tmdb_movie_external_ids")
+		self.table_movie_genres: str = self.config.get("db_tables", {}).get("movie_genres", "tmdb_movie_genres")
+		self.table_movie_images: str = self.config.get("db_tables", {}).get("movie_images", "tmdb_movie_images")
+		self.table_movie_keywords: str = self.config.get("db_tables", {}).get("movie_keywords", "tmdb_movie_keywords")
+		self.table_movie_origin_country: str = self.config.get("db_tables", {}).get("movie_origin_country", "tmdb_movie_origin_country")
+		self.table_movie_production_companies: str = self.config.get("db_tables", {}).get("movie_production_companies", "tmdb_movie_production_companies")
+		self.table_movie_production_countries: str = self.config.get("db_tables", {}).get("movie_production_countries", "tmdb_movie_production_countries")
+		self.table_movie_release_dates: str = self.config.get("db_tables", {}).get("movie_release_dates", "tmdb_movie_release_dates")
+		self.table_movie_roles: str = self.config.get("db_tables", {}).get("movie_roles", "tmdb_movie_roles")
+		self.table_movie_spoken_languages: str = self.config.get("db_tables", {}).get("movie_spoken_languages", "tmdb_movie_spoken_languages")
+		self.table_movie_translations: str = self.config.get("db_tables", {}).get("movie_translations", "tmdb_movie_translations")
+		self.table_movie_videos: str = self.config.get("db_tables", {}).get("movie_videos", "tmdb_movie_videos")
 
 		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
 		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb_country")
@@ -48,25 +50,55 @@ class MovieConfig(Config):
 		self.missing_movies: set = None
 
 		# Columns
-		# self.person_columns: list[str] = ["id", "adult", "birthday", "deathday", "gender", "homepage", "imdb_id", "known_for_department", "name", "place_of_birth", "popularity"]
-		# self.person_translation_columns: list[str] = ["person", "biography", "iso_639_1", "iso_3166_1"]
-		# self.person_image_columns: list[str] = ["person", "file_path", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
-		# self.person_external_id_columns: list[str] = ["person", "source", "value"]
-		# self.person_also_known_as_columns: list[str] = ["person", "name"]
+		self.movie_columns: list[str] = ["id", "adult", "budget", "original_language", "original_title", "popularity", "revenue", "status", "vote_average", "vote_count", "belongs_to_collection", "updated_at"]
+		self.movie_alternative_titles_columns: list[str] = ["movie_id", "iso_3166_1", "title", "type"]
+		self.movie_credits_columns: list[str] = ["id", "movie_id", "person_id", "department", "job"]
+		self.movie_external_ids_columns: list[str] = ["movie_id", "source", "value"]
+		self.movie_genres_columns: list[str] = ["movie_id", "genre_id"]
+		self.movie_images_columns: list[str] = ["movie_id", "file_path", "type", "aspect_ratio", "height", "width", "vote_average", "vote_count", "iso_639_1"]
+		self.movie_keywords_columns: list[str] = ["movie_id", "keyword_id"]
+		self.movie_origin_country_columns: list[str] = ["movie_id", "iso_3166_1"]
+		self.movie_production_companies_columns: list[str] = ["movie_id", "company_id"]
+		self.movie_production_countries_columns: list[str] = ["movie_id", "iso_3166_1"]
+		self.movie_release_dates_columns: list[str] = ["movie_id", "iso_3166_1", "release_date", "certification", "iso_639_1", "note", "release_type", "descriptors"]
+		self.movie_roles_columns: list[str] = ["credit_id", "character", '"order"']
+		self.movie_spoken_languages_columns: list[str] = ["movie_id", "iso_639_1"]
+		self.movie_translations_columns: list[str] = ["movie_id", "overview", "tagline", "title", "homepage", "runtime", "iso_639_1", "iso_3166_1"]
+		self.movie_videos_columns: list[str] = ["id", "movie_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
+		
+		# On conflict
+		self.movie_on_conflict: list[str] = ["id"]
+		self.movie_alternative_titles_on_conflict: list[str] = ["movie_id", "iso_3166_1", "title", "type"]
+		self.movie_credits_on_conflict: list[str] = ["id"]
+		self.movie_external_ids_on_conflict: list[str] = ["movie_id", "source"]
+		self.movie_genres_on_conflict: list[str] = ["movie_id", "genre_id"]
+		self.movie_images_on_conflict: list[str] = ["movie_id", "file_path", "type"]
+		self.movie_keywords_on_conflict: list[str] = ["movie_id", "keyword_id"]
+		self.movie_origin_country_on_conflict: list[str] = ["movie_id", "iso_3166_1"]
+		self.movie_production_companies_on_conflict: list[str] = ["movie_id", "company_id"]
+		self.movie_production_countries_on_conflict: list[str] = ["movie_id", "iso_3166_1"]
+		self.movie_release_dates_on_conflict: list[str] = ["movie_id", "iso_3166_1", "iso_639_1", "release_type"]
+		self.movie_roles_on_conflict: list[str] = ["credit_id"]
+		self.movie_spoken_languages_on_conflict: list[str] = ["movie_id", "iso_639_1"]
+		self.movie_translations_on_conflict: list[str] = ["movie_id", "iso_639_1", "iso_3166_1"]
+		self.movie_videos_on_conflict: list[str] = ["id"]
 
-		# # On conflict
-		# self.person_on_conflict: list[str] = ["id"]
-		# self.person_translation_on_conflict: list[str] = ["person", "iso_639_1", "iso_3166_1"]
-		# self.person_image_on_conflict: list[str] = ["person", "file_path"]
-		# self.person_external_id_on_conflict: list[str] = ["person", "source"]
-		# self.person_also_known_as_on_conflict: list[str] = ["person", "name"]
-
-		# # On conflict update
-		# self.person_on_conflict_update: list[str] = [col for col in self.person_columns if col not in self.person_on_conflict]
-		# self.person_translation_on_conflict_update: list[str] = [col for col in self.person_translation_columns if col not in self.person_translation_on_conflict]
-		# self.person_image_on_conflict_update: list[str] = [col for col in self.person_image_columns if col not in self.person_image_on_conflict]
-		# self.person_external_id_on_conflict_update: list[str] = [col for col in self.person_external_id_columns if col not in self.person_external_id_on_conflict]
-		# self.person_also_known_as_on_conflict_update: list[str] = [col for col in self.person_also_known_as_columns if col not in self.person_also_known_as_on_conflict]
+		# On conflict update
+		self.movie_on_conflict_update: list[str] = [col for col in self.movie_columns if col not in self.movie_on_conflict]
+		self.movie_alternative_titles_on_conflict_update: list[str] = [col for col in self.movie_alternative_titles_columns if col not in self.movie_alternative_titles_on_conflict]
+		self.movie_credits_on_conflict_update: list[str] = [col for col in self.movie_credits_columns if col not in self.movie_credits_on_conflict]
+		self.movie_external_ids_on_conflict_update: list[str] = [col for col in self.movie_external_ids_columns if col not in self.movie_external_ids_on_conflict]
+		self.movie_genres_on_conflict_update: list[str] = [col for col in self.movie_genres_columns if col not in self.movie_genres_on_conflict]
+		self.movie_images_on_conflict_update: list[str] = [col for col in self.movie_images_columns if col not in self.movie_images_on_conflict]
+		self.movie_keywords_on_conflict_update: list[str] = [col for col in self.movie_keywords_columns if col not in self.movie_keywords_on_conflict]
+		self.movie_origin_country_on_conflict_update: list[str] = [col for col in self.movie_origin_country_columns if col not in self.movie_origin_country_on_conflict]
+		self.movie_production_companies_on_conflict_update: list[str] = [col for col in self.movie_production_companies_columns if col not in self.movie_production_companies_on_conflict]
+		self.movie_production_countries_on_conflict_update: list[str] = [col for col in self.movie_production_countries_columns if col not in self.movie_production_countries_on_conflict]
+		self.movie_release_dates_on_conflict_update: list[str] = [col for col in self.movie_release_dates_columns if col not in self.movie_release_dates_on_conflict]
+		self.movie_roles_on_conflict_update: list[str] = [col for col in self.movie_roles_columns if col not in self.movie_roles_on_conflict]
+		self.movie_spoken_languages_on_conflict_update: list[str] = [col for col in self.movie_spoken_languages_columns if col not in self.movie_spoken_languages_on_conflict]
+		self.movie_translations_on_conflict_update: list[str] = [col for col in self.movie_translations_columns if col not in self.movie_translations_on_conflict]
+		self.movie_videos_on_conflict_update: list[str] = [col for col in self.movie_videos_columns if col not in self.movie_videos_on_conflict]
 
 	@task
 	def get_db_data(self):
@@ -102,152 +134,421 @@ class MovieConfig(Config):
 
 	@task
 	def push(self, csv: dict[str, CSVFile]):
-		"""Push the persons to the database"""
+		"""Push the movies to the database"""
 		conn = self.db_client.get_connection()
 		try:
-			csv["movie"].clean_duplicates(conflict_columns=self.movie_on_conflict)
-
 			# Clean duplicates from the CSV files
-			# person_csv.clean_duplicates(conflict_columns=self.person_on_conflict)
-			# person_translation_csv.clean_duplicates(conflict_columns=self.person_translation_on_conflict)
-			# person_image_csv.clean_duplicates(conflict_columns=self.person_image_on_conflict)
-			# person_external_id_csv.clean_duplicates(conflict_columns=self.person_external_id_on_conflict)
-			# person_also_known_as_csv.clean_duplicates(conflict_columns=self.person_also_known_as_on_conflict)
+			csv["movie"].clean_duplicates(conflict_columns=self.movie_on_conflict)
+			csv["movie_alternative_titles"].clean_duplicates(conflict_columns=self.movie_alternative_titles_on_conflict)
+			csv["movie_credits"].clean_duplicates(conflict_columns=self.movie_credits_on_conflict)
+			csv["movie_external_ids"].clean_duplicates(conflict_columns=self.movie_external_ids_on_conflict)
+			csv["movie_genres"].clean_duplicates(conflict_columns=self.movie_genres_on_conflict)
+			csv["movie_images"].clean_duplicates(conflict_columns=self.movie_images_on_conflict)
+			csv["movie_keywords"].clean_duplicates(conflict_columns=self.movie_keywords_on_conflict)
+			csv["movie_origin_country"].clean_duplicates(conflict_columns=self.movie_origin_country_on_conflict)
+			csv["movie_production_companies"].clean_duplicates(conflict_columns=self.movie_production_companies_on_conflict)
+			csv["movie_production_countries"].clean_duplicates(conflict_columns=self.movie_production_countries_on_conflict)
+			csv["movie_release_dates"].clean_duplicates(conflict_columns=self.movie_release_dates_on_conflict)
+			csv["movie_roles"].clean_duplicates(conflict_columns=self.movie_roles_on_conflict)
+			csv["movie_spoken_languages"].clean_duplicates(conflict_columns=self.movie_spoken_languages_on_conflict)
+			csv["movie_translations"].clean_duplicates(conflict_columns=self.movie_translations_on_conflict)
+			csv["movie_videos"].clean_duplicates(conflict_columns=self.movie_videos_on_conflict)
 
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
-					temp_person = f"temp_{self.table_person}_{uuid.uuid4().hex}"
-					temp_person_translation = f"temp_{self.table_person_translation}_{uuid.uuid4().hex}"
-					temp_person_image = f"temp_{self.table_person_image}_{uuid.uuid4().hex}"
-					temp_person_external_id = f"temp_{self.table_person_external_id}_{uuid.uuid4().hex}"
-					temp_person_also_known_as = f"temp_{self.table_person_also_known_as}_{uuid.uuid4().hex}"
+					temp_movie = f"temp_{self.table_movie}_{uuid.uuid4().hex}"
+					temp_movie_alternative_titles = f"temp_{self.table_movie_alternative_titles}_{uuid.uuid4().hex}"
+					temp_movie_credits = f"temp_{self.table_movie_credits}_{uuid.uuid4().hex}"
+					temp_movie_external_ids = f"temp_{self.table_movie_external_ids}_{uuid.uuid4().hex}"
+					temp_movie_genres = f"temp_{self.table_movie_genres}_{uuid.uuid4().hex}"
+					temp_movie_images = f"temp_{self.table_movie_images}_{uuid.uuid4().hex}"
+					temp_movie_keywords = f"temp_{self.table_movie_keywords}_{uuid.uuid4().hex}"
+					temp_movie_origin_country = f"temp_{self.table_movie_origin_country}_{uuid.uuid4().hex}"
+					temp_movie_production_companies = f"temp_{self.table_movie_production_companies}_{uuid.uuid4().hex}"
+					temp_movie_production_countries = f"temp_{self.table_movie_production_countries}_{uuid.uuid4().hex}"
+					temp_movie_release_dates = f"temp_{self.table_movie_release_dates}_{uuid.uuid4().hex}"
+					temp_movie_roles = f"temp_{self.table_movie_roles}_{uuid.uuid4().hex}"
+					temp_movie_spoken_languages = f"temp_{self.table_movie_spoken_languages}_{uuid.uuid4().hex}"
+					temp_movie_translations = f"temp_{self.table_movie_translations}_{uuid.uuid4().hex}"
+					temp_movie_videos = f"temp_{self.table_movie_videos}_{uuid.uuid4().hex}"
 
 					cursor.execute(f"""
-						CREATE TEMP TABLE {temp_person} (LIKE {self.table_person} INCLUDING ALL);
-						CREATE TEMP TABLE {temp_person_translation} (LIKE {self.table_person_translation} INCLUDING ALL);
-						CREATE TEMP TABLE {temp_person_image} (LIKE {self.table_person_image} INCLUDING ALL);
-						CREATE TEMP TABLE {temp_person_external_id} (LIKE {self.table_person_external_id} INCLUDING ALL);
-						CREATE TEMP TABLE {temp_person_also_known_as} (LIKE {self.table_person_also_known_as} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie} (LIKE {self.table_movie} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_alternative_titles} (LIKE {self.table_movie_alternative_titles} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_credits} (LIKE {self.table_movie_credits} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_external_ids} (LIKE {self.table_movie_external_ids} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_genres} (LIKE {self.table_movie_genres} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_images} (LIKE {self.table_movie_images} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_keywords} (LIKE {self.table_movie_keywords} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_origin_country} (LIKE {self.table_movie_origin_country} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_production_companies} (LIKE {self.table_movie_production_companies} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_production_countries} (LIKE {self.table_movie_production_countries} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_release_dates} (LIKE {self.table_movie_release_dates} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_roles} (LIKE {self.table_movie_roles} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_spoken_languages} (LIKE {self.table_movie_spoken_languages} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_translations} (LIKE {self.table_movie_translations} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_movie_videos} (LIKE {self.table_movie_videos} INCLUDING ALL);
 					""")
 
-					with open(person_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY {temp_person} ({','.join(self.person_columns)}) FROM STDIN WITH CSV HEADER", f)
-					with open(person_translation_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY {temp_person_translation} ({','.join(self.person_translation_columns)}) FROM STDIN WITH CSV HEADER", f)
-					with open(person_image_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY {temp_person_image} ({','.join(self.person_image_columns)}) FROM STDIN WITH CSV HEADER", f)
-					with open(person_external_id_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY {temp_person_external_id} ({','.join(self.person_external_id_columns)}) FROM STDIN WITH CSV HEADER", f)
-					with open(person_also_known_as_csv.file_path, "r") as f:
-						cursor.copy_expert(f"COPY {temp_person_also_known_as} ({','.join(self.person_also_known_as_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie} ({','.join(self.movie_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_alternative_titles"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_alternative_titles} ({','.join(self.movie_alternative_titles_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_credits"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_credits} ({','.join(self.movie_credits_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_external_ids"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_external_ids} ({','.join(self.movie_external_ids_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_genres"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_genres} ({','.join(self.movie_genres_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_images"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_images} ({','.join(self.movie_images_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_keywords"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_keywords} ({','.join(self.movie_keywords_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_origin_country"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_origin_country} ({','.join(self.movie_origin_country_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_production_companies"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_production_companies} ({','.join(self.movie_production_companies_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_production_countries"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_production_countries} ({','.join(self.movie_production_countries_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_release_dates"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_release_dates} ({','.join(self.movie_release_dates_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_roles"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_roles} ({','.join(self.movie_roles_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_spoken_languages"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_spoken_languages} ({','.join(self.movie_spoken_languages_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_translations"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_translations} ({','.join(self.movie_translations_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["movie_videos"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_movie_videos} ({','.join(self.movie_videos_columns)}) FROM STDIN WITH CSV HEADER", f)
 
 					insert_into(
 						cursor=cursor,
-						table=self.table_person,
-						temp_table=temp_person,
-						columns=self.person_columns,
-						on_conflict=self.person_on_conflict,
-						on_conflict_update=self.person_on_conflict_update
+						table=self.table_movie,
+						temp_table=temp_movie,
+						columns=self.movie_columns,
+						on_conflict=self.movie_on_conflict,
+						on_conflict_update=self.movie_on_conflict_update
 					)
 
 					insert_into(
 						cursor=cursor,
-						table=self.table_person_translation,
-						temp_table=temp_person_translation,
-						columns=self.person_translation_columns,
-						on_conflict=self.person_translation_on_conflict,
-						on_conflict_update=self.person_translation_on_conflict_update
+						table=self.table_movie_alternative_titles,
+						temp_table=temp_movie_alternative_titles,
+						columns=self.movie_alternative_titles_columns,
+						on_conflict=self.movie_alternative_titles_on_conflict,
+						on_conflict_update=self.movie_alternative_titles_on_conflict_update
 					)
 
 					insert_into(
 						cursor=cursor,
-						table=self.table_person_image,
-						temp_table=temp_person_image,
-						columns=self.person_image_columns,
-						on_conflict=self.person_image_on_conflict,
-						on_conflict_update=self.person_image_on_conflict_update
+						table=self.table_movie_credits,
+						temp_table=temp_movie_credits,
+						columns=self.movie_credits_columns,
+						on_conflict=self.movie_credits_on_conflict,
+						on_conflict_update=self.movie_credits_on_conflict_update
 					)
 
 					insert_into(
 						cursor=cursor,
-						table=self.table_person_external_id,
-						temp_table=temp_person_external_id,
-						columns=self.person_external_id_columns,
-						on_conflict=self.person_external_id_on_conflict,
-						on_conflict_update=self.person_external_id_on_conflict_update
+						table=self.table_movie_external_ids,
+						temp_table=temp_movie_external_ids,
+						columns=self.movie_external_ids_columns,
+						on_conflict=self.movie_external_ids_on_conflict,
+						on_conflict_update=self.movie_external_ids_on_conflict_update
 					)
 
 					insert_into(
 						cursor=cursor,
-						table=self.table_person_also_known_as,
-						temp_table=temp_person_also_known_as,
-						columns=self.person_also_known_as_columns,
-						on_conflict=self.person_also_known_as_on_conflict,
-						on_conflict_update=self.person_also_known_as_on_conflict_update
+						table=self.table_movie_genres,
+						temp_table=temp_movie_genres,
+						columns=self.movie_genres_columns,
+						on_conflict=self.movie_genres_on_conflict,
+						on_conflict_update=self.movie_genres_on_conflict_update
 					)
 
-					# Delete outdated  translations
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_images,
+						temp_table=temp_movie_images,
+						columns=self.movie_images_columns,
+						on_conflict=self.movie_images_on_conflict,
+						on_conflict_update=self.movie_images_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_keywords,
+						temp_table=temp_movie_keywords,
+						columns=self.movie_keywords_columns,
+						on_conflict=self.movie_keywords_on_conflict,
+						on_conflict_update=self.movie_keywords_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_origin_country,
+						temp_table=temp_movie_origin_country,
+						columns=self.movie_origin_country_columns,
+						on_conflict=self.movie_origin_country_on_conflict,
+						on_conflict_update=self.movie_origin_country_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_production_companies,
+						temp_table=temp_movie_production_companies,
+						columns=self.movie_production_companies_columns,
+						on_conflict=self.movie_production_companies_on_conflict,
+						on_conflict_update=self.movie_production_companies_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_production_countries,
+						temp_table=temp_movie_production_countries,
+						columns=self.movie_production_countries_columns,
+						on_conflict=self.movie_production_countries_on_conflict,
+						on_conflict_update=self.movie_production_countries_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_release_dates,
+						temp_table=temp_movie_release_dates,
+						columns=self.movie_release_dates_columns,
+						on_conflict=self.movie_release_dates_on_conflict,
+						on_conflict_update=self.movie_release_dates_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_roles,
+						temp_table=temp_movie_roles,
+						columns=self.movie_roles_columns,
+						on_conflict=self.movie_roles_on_conflict,
+						on_conflict_update=self.movie_roles_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_spoken_languages,
+						temp_table=temp_movie_spoken_languages,
+						columns=self.movie_spoken_languages_columns,
+						on_conflict=self.movie_spoken_languages_on_conflict,
+						on_conflict_update=self.movie_spoken_languages_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_translations,
+						temp_table=temp_movie_translations,
+						columns=self.movie_translations_columns,
+						on_conflict=self.movie_translations_on_conflict,
+						on_conflict_update=self.movie_translations_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_movie_videos,
+						temp_table=temp_movie_videos,
+						columns=self.movie_videos_columns,
+						on_conflict=self.movie_videos_on_conflict,
+						on_conflict_update=self.movie_videos_on_conflict_update
+					)
+
+					# Delete outdated alternative titles
 					cursor.execute(f"""
-						DELETE FROM {self.table_person_translation}
-						WHERE ({','.join(self.person_translation_on_conflict)}) NOT IN (
-							SELECT {','.join(self.person_translation_on_conflict)}
-							FROM {temp_person_translation}
+						DELETE FROM {self.table_movie_alternative_titles}
+						WHERE ({','.join(self.movie_alternative_titles_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_alternative_titles_on_conflict)}
+							FROM {temp_movie_alternative_titles}
 						)
-						AND person IN (
-							SELECT id FROM {temp_person}
+						AND movie IN (
+							SELECT id FROM {temp_movie}
 						);
 					""")
 
-					# Delete outdated images
+					# Delete outdated credits
 					cursor.execute(f"""
-						DELETE FROM {self.table_person_image}
-						WHERE ({','.join(self.person_image_on_conflict)}) NOT IN (
-							SELECT {','.join(self.person_image_on_conflict)}
-							FROM {temp_person_image}
+						DELETE FROM {self.table_movie_credits}
+						WHERE ({','.join(self.movie_credits_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_credits_on_conflict)}
+							FROM {temp_movie_credits}
 						)
-						AND person IN (
-							SELECT id FROM {temp_person}
+						AND movie IN (
+							SELECT id FROM {temp_movie}
 						);
 					""")
 
 					# Delete outdated external ids
 					cursor.execute(f"""
-						DELETE FROM {self.table_person_external_id}
-						WHERE ({','.join(self.person_external_id_on_conflict)}) NOT IN (
-							SELECT {','.join(self.person_external_id_on_conflict)}
-							FROM {temp_person_external_id}
+						DELETE FROM {self.table_movie_external_ids}
+						WHERE ({','.join(self.movie_external_ids_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_external_ids_on_conflict)}
+							FROM {temp_movie_external_ids}
 						)
-						AND person IN (
-							SELECT id FROM {temp_person}
+						AND movie IN (
+							SELECT id FROM {temp_movie}
 						);
 					""")
 
-					# Delete outdated also known as
+					# Delete outdated genres
 					cursor.execute(f"""
-						DELETE FROM {self.table_person_also_known_as}
-						WHERE ({','.join(self.person_also_known_as_on_conflict)}) NOT IN (
-							SELECT {','.join(self.person_also_known_as_on_conflict)}
-							FROM {temp_person_also_known_as}
+						DELETE FROM {self.table_movie_genres}
+						WHERE ({','.join(self.movie_genres_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_genres_on_conflict)}
+							FROM {temp_movie_genres}
 						)
-						AND person IN (
-							SELECT id FROM {temp_person}
+						AND movie IN (
+							SELECT id FROM {temp_movie}
 						);
 					""")
-				
+
+					# Delete outdated images
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_images}
+						WHERE ({','.join(self.movie_images_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_images_on_conflict)}
+							FROM {temp_movie_images}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated keywords
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_keywords}
+						WHERE ({','.join(self.movie_keywords_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_keywords_on_conflict)}
+							FROM {temp_movie_keywords}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated origin countries
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_origin_country}
+						WHERE ({','.join(self.movie_origin_country_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_origin_country_on_conflict)}
+							FROM {temp_movie_origin_country}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated production companies
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_production_companies}
+						WHERE ({','.join(self.movie_production_companies_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_production_companies_on_conflict)}
+							FROM {temp_movie_production_companies}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated production countries
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_production_countries}
+						WHERE ({','.join(self.movie_production_countries_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_production_countries_on_conflict)}
+							FROM {temp_movie_production_countries}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated release dates
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_release_dates}
+						WHERE ({','.join(self.movie_release_dates_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_release_dates_on_conflict)}
+							FROM {temp_movie_release_dates}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated roles
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_roles}
+						WHERE ({','.join(self.movie_roles_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_roles_on_conflict)}
+							FROM {temp_movie_roles}
+						)
+						AND credit_id IN (
+							SELECT id FROM {temp_movie_credits}
+						);
+					""")
+
+					# Delete outdated spoken languages
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_spoken_languages}
+						WHERE ({','.join(self.movie_spoken_languages_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_spoken_languages_on_conflict)}
+							FROM {temp_movie_spoken_languages}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated translations
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_translations}
+						WHERE ({','.join(self.movie_translations_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_translations_on_conflict)}
+							FROM {temp_movie_translations}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete outdated videos
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_videos}
+						WHERE ({','.join(self.movie_videos_on_conflict)}) NOT IN (
+							SELECT {','.join(self.movie_videos_on_conflict)}
+							FROM {temp_movie_videos}
+						)
+						AND movie IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
 					conn.commit()
 
-					person_csv.delete()
-					person_translation_csv.delete()
-					person_image_csv.delete()
-					person_external_id_csv.delete()
-					person_also_known_as_csv.delete()
+					# Delete the CSV files
+					csv["movie"].delete()
+					csv["movie_alternative_titles"].delete()
+					csv["movie_credits"].delete()
+					csv["movie_external_ids"].delete()
+					csv["movie_genres"].delete()
+					csv["movie_images"].delete()
+					csv["movie_keywords"].delete()
+					csv["movie_origin_country"].delete()
+					csv["movie_production_companies"].delete()
+					csv["movie_production_countries"].delete()
+					csv["movie_release_dates"].delete()
+					csv["movie_roles"].delete()
+					csv["movie_spoken_languages"].delete()
+					csv["movie_translations"].delete()
+					csv["movie_videos"].delete()
 				except Exception as e:
 					conn.rollback()
 					raise
 				finally:
 					conn.autocommit = True
 		except Exception as e:
-			raise ValueError(f"Failed to push persons to the database: {e}")
+			raise ValueError(f"Failed to push movies to the database: {e}")
 		finally:
 			self.db_client.return_connection(conn)
