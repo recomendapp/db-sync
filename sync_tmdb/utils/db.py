@@ -3,8 +3,18 @@ def insert_into(cursor, table: str, columns: list, temp_table: str, on_conflict:
 		update_clause = f"DO UPDATE SET {','.join([f'{column}=EXCLUDED.{column}' for column in on_conflict_update])}"
 	else:
 		update_clause = "DO NOTHING"
-	cursor.execute(f"""
+	
+	query = f"""
 		INSERT INTO {table} ({','.join(columns)})
 		SELECT {','.join(columns)} FROM {temp_table}
-		ON CONFLICT ({','.join(on_conflict)}) {update_clause};
-	""")
+	"""
+
+	if on_conflict:
+		if len(on_conflict) > 0:
+			query += f" ON CONFLICT ({','.join(on_conflict)}) {update_clause};"
+		else:
+			query += f" ON CONFLICT DO NOTHING;"
+	else:
+		query += ";"
+
+	cursor.execute(query)

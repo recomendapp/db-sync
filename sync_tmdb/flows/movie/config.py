@@ -231,13 +231,14 @@ class MovieConfig(Config):
 						on_conflict_update=self.movie_on_conflict_update
 					)
 
+					# Here we disable the on conflict to do nothing
 					insert_into(
 						cursor=cursor,
 						table=self.table_movie_alternative_titles,
 						temp_table=temp_movie_alternative_titles,
 						columns=self.movie_alternative_titles_columns,
-						on_conflict=self.movie_alternative_titles_on_conflict,
-						on_conflict_update=self.movie_alternative_titles_on_conflict_update
+						on_conflict=[],
+						on_conflict_update=[]
 					)
 
 					insert_into(
@@ -364,7 +365,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_alternative_titles_on_conflict)}
 							FROM {temp_movie_alternative_titles}
 						)
-						AND movie IN (
+						AND {self.movie_alternative_titles_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -376,7 +377,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_credits_on_conflict)}
 							FROM {temp_movie_credits}
 						)
-						AND movie IN (
+						AND {self.movie_credits_columns[1]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -388,7 +389,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_external_ids_on_conflict)}
 							FROM {temp_movie_external_ids}
 						)
-						AND movie IN (
+						AND {self.movie_external_ids_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -400,7 +401,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_genres_on_conflict)}
 							FROM {temp_movie_genres}
 						)
-						AND movie IN (
+						AND {self.movie_genres_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -412,7 +413,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_images_on_conflict)}
 							FROM {temp_movie_images}
 						)
-						AND movie IN (
+						AND {self.movie_images_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -424,7 +425,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_keywords_on_conflict)}
 							FROM {temp_movie_keywords}
 						)
-						AND movie IN (
+						AND {self.movie_keywords_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -436,7 +437,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_origin_country_on_conflict)}
 							FROM {temp_movie_origin_country}
 						)
-						AND movie IN (
+						AND {self.movie_origin_country_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -448,7 +449,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_production_companies_on_conflict)}
 							FROM {temp_movie_production_companies}
 						)
-						AND movie IN (
+						AND {self.movie_production_companies_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -460,7 +461,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_production_countries_on_conflict)}
 							FROM {temp_movie_production_countries}
 						)
-						AND movie IN (
+						AND {self.movie_production_countries_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -472,7 +473,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_release_dates_on_conflict)}
 							FROM {temp_movie_release_dates}
 						)
-						AND movie IN (
+						AND {self.movie_release_dates_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -484,7 +485,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_roles_on_conflict)}
 							FROM {temp_movie_roles}
 						)
-						AND credit_id IN (
+						AND {self.movie_roles_columns[0]} IN (
 							SELECT id FROM {temp_movie_credits}
 						);
 					""")
@@ -496,7 +497,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_spoken_languages_on_conflict)}
 							FROM {temp_movie_spoken_languages}
 						)
-						AND movie IN (
+						AND {self.movie_spoken_languages_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -508,7 +509,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_translations_on_conflict)}
 							FROM {temp_movie_translations}
 						)
-						AND movie IN (
+						AND {self.movie_translations_columns[0]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
@@ -520,7 +521,7 @@ class MovieConfig(Config):
 							SELECT {','.join(self.movie_videos_on_conflict)}
 							FROM {temp_movie_videos}
 						)
-						AND movie IN (
+						AND {self.movie_videos_columns[1]} IN (
 							SELECT id FROM {temp_movie}
 						);
 					""")
