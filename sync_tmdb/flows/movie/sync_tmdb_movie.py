@@ -192,7 +192,7 @@ def process_missing_movies(config: MovieConfig):
 				csv["movie_videos"].append(rows_data=Mapper.movies_videos(config=config,movies=movies_details_results))
 
 				config.logger.info(f"Pushing movies to the database...")
-				config.push(csv=csv)
+				config.push.submit(csv=csv).wait()
 				config.logger.info(f"Successfully pushed movies to the database")
 			
 			# Wait for all the submits to finish
