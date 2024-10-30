@@ -6,6 +6,7 @@ from datetime import date
 import pandas as pd
 from more_itertools import chunked
 import time
+import ast
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -72,7 +73,6 @@ def process_missing_movies(config: MovieConfig):
 		if len(config.missing_movies) > 0:
 			config.get_db_data()
 			chunks = list(chunked(config.missing_movies, 500))
-			submits = []
 			for chunk in chunks:
 				csv: dict[str, CSVFile] = {}
 				csv["movie"] = CSVFile(
@@ -153,30 +153,46 @@ def process_missing_movies(config: MovieConfig):
 
 				movies_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
 
-				for movie_details_response in movies_details_futures:
-					movie_details = movie_details_response.result()
-					if movie_details is not None:
-						csv["movie"].append(rows_data=Mapper.movie(config=config,movie=movie_details))
-						csv["movie_alternative_titles"].append(rows_data=Mapper.movie_alternative_titles(config=config,movie=movie_details))
-						movie_credits_df, movie_roles_df = Mapper.movie_credits(config=config,movie=movie_details)
-						csv["movie_credits"].append(rows_data=movie_credits_df)
-						csv["movie_roles"].append(rows_data=movie_roles_df)
-						csv["movie_external_ids"].append(rows_data=Mapper.movie_external_ids(config=config,movie=movie_details))
-						csv["movie_genres"].append(rows_data=Mapper.movie_genres(config=config,movie=movie_details))
-						csv["movie_images"].append(rows_data=Mapper.movie_images(config=config,movie=movie_details))
-						csv["movie_keywords"].append(rows_data=Mapper.movie_keywords(config=config,movie=movie_details))
-						csv["movie_origin_country"].append(rows_data=Mapper.movie_origin_country(config=config,movie=movie_details))
-						csv["movie_production_companies"].append(rows_data=Mapper.movie_production_companies(config=config,movie=movie_details))
-						csv["movie_production_countries"].append(rows_data=Mapper.movie_production_countries(config=config,movie=movie_details))
-						csv["movie_release_dates"].append(rows_data=Mapper.movie_release_dates(config=config,movie=movie_details))
-						csv["movie_spoken_languages"].append(rows_data=Mapper.movie_spoken_languages(config=config,movie=movie_details))
-						csv["movie_translations"].append(rows_data=Mapper.movie_translations(config=config,movie=movie_details))
-						csv["movie_videos"].append(rows_data=Mapper.movie_videos(config=config,movie=movie_details))
+				movies_details_results = movies_details_futures.result()
+
+				# config.logger.info(f"Processing movies details...")
+				csv["movie"].append(rows_data=Mapper.movies(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies alternative titles...")
+				csv["movie_alternative_titles"].append(rows_data=Mapper.movies_alternative_titles(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies credits...")
+				movies_credits_df, movies_roles_df = Mapper.movies_credits(config=config,movies=movies_details_results)
+				csv["movie_credits"].append(rows_data=movies_credits_df)
+				# config.logger.info(f"Processing movies roles...")
+				csv["movie_roles"].append(rows_data=movies_roles_df)
+				# config.logger.info(f"Processing movies external ids...")
+				csv["movie_external_ids"].append(rows_data=Mapper.movies_external_ids(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies genres...")
+				csv["movie_genres"].append(rows_data=Mapper.movies_genres(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies images...")
+				csv["movie_images"].append(rows_data=Mapper.movies_images(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies keywords...")
+				csv["movie_keywords"].append(rows_data=Mapper.movies_keywords(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies origin country...")
+				csv["movie_origin_country"].append(rows_data=Mapper.movies_origin_country(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies production companies...")
+				csv["movie_production_companies"].append(rows_data=Mapper.movies_production_companies(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies production countries...")
+				csv["movie_production_countries"].append(rows_data=Mapper.movies_production_countries(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies release dates...")
+				csv["movie_release_dates"].append(rows_data=Mapper.movies_release_dates(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies spoken languages...")
+				csv["movie_spoken_languages"].append(rows_data=Mapper.movies_spoken_languages(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies translations...")
+				csv["movie_translations"].append(rows_data=Mapper.movies_translations(config=config,movies=movies_details_results))
+				# config.logger.info(f"Processing movies videos...")
+				csv["movie_videos"].append(rows_data=Mapper.movies_videos(config=config,movies=movies_details_results))
 				
-				submits.append(config.push.submit(csv=csv))
+				config.logger.info(f"Pushing movies to the database...")
+				config.push(csv=csv)
+				config.logger.info(f"Successfully pushed movies to the database")
 			
 			# Wait for all the submits to finish
-			wait(submits)
+			# wait(submits)
 	except Exception as e:
 		raise ValueError(f"Failed to process missing movies: {e}")
 	
@@ -210,4 +226,5 @@ def sync_tmdb_movie(date: date = date.today()):
 	except Exception as e:
 		config.log_manager.failed()
 		raise ValueError(f"Failed to sync movie: {e}")
+
 
