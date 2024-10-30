@@ -153,7 +153,11 @@ def process_missing_movies(config: MovieConfig):
 
 				movies_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
 
-				movies_details_results = movies_details_futures.result()
+				movies_details_results = []
+				for movie_details_response in movies_details_futures:
+					movie_details = movie_details_response.result()
+					if movie_details is not None:
+						movies_details_results.append(movie_details)
 
 				# config.logger.info(f"Processing movies details...")
 				csv["movie"].append(rows_data=Mapper.movies(config=config,movies=movies_details_results))
@@ -186,7 +190,7 @@ def process_missing_movies(config: MovieConfig):
 				csv["movie_translations"].append(rows_data=Mapper.movies_translations(config=config,movies=movies_details_results))
 				# config.logger.info(f"Processing movies videos...")
 				csv["movie_videos"].append(rows_data=Mapper.movies_videos(config=config,movies=movies_details_results))
-				
+
 				config.logger.info(f"Pushing movies to the database...")
 				config.push(csv=csv)
 				config.logger.info(f"Successfully pushed movies to the database")
