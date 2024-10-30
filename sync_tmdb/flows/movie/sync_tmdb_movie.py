@@ -72,7 +72,7 @@ def process_missing_movies(config: MovieConfig):
 	try:
 		if len(config.missing_movies) > 0:
 			config.get_db_data()
-			chunks = list(chunked(config.missing_movies, 500))
+			chunks = list(chunked(config.missing_movies, 100))
 			for chunk in chunks:
 				csv: dict[str, CSVFile] = {}
 				csv["movie"] = CSVFile(
@@ -192,7 +192,8 @@ def process_missing_movies(config: MovieConfig):
 				csv["movie_videos"].append(rows_data=Mapper.movies_videos(config=config,movies=movies_details_results))
 
 				config.logger.info(f"Pushing movies to the database...")
-				config.push.submit(csv=csv).wait()
+				push_future = config.push.submit(csv=csv)
+				push_future.result(raise_on_failure=True)
 				config.logger.info(f"Successfully pushed movies to the database")
 			
 			# Wait for all the submits to finish
