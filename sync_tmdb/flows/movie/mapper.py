@@ -42,7 +42,9 @@ class Mapper:
 			}
 			for movie in movies
 		]
-		return pd.DataFrame(movies_data)
+		df = pd.DataFrame(movies_data)
+		df = df.convert_dtypes()
+		return df
 
 	@staticmethod
 	def movie_alternative_titles(config: Config, movie: dict) -> pd.DataFrame:
@@ -88,7 +90,7 @@ class Mapper:
 		for credit in credits.get("cast", []) + credits.get("crew", []):
 			if credit["id"] in config.db_persons:
 				movie_credits_data.append({
-					"id": credit["id"],
+					"id": credit["credit_id"],
 					"movie_id": movieId,
 					"person_id": credit["id"],
 					"department": credit["department"] if "department" in credit else "Acting",
@@ -96,9 +98,9 @@ class Mapper:
 				})
 				if "character" in credit:
 					movie_roles_data.append({
-						"movie_id": movieId,
+						"credit_id": credit["credit_id"],
 						"character": nullify(credit["character"], ""),
-						"order": nullify(credit["order"], 0),
+						"order": credit.get("order", 0),
 					})
 		
 		return pd.DataFrame(movie_credits_data), pd.DataFrame(movie_roles_data)
@@ -110,22 +112,21 @@ class Mapper:
 		movies_roles_data = []
 
 		for movie in movies:
-			movieId = movie["id"]
 			credits = movie.get("credits", {})
 			for credit in credits.get("cast", []) + credits.get("crew", []):
 				if credit["id"] in config.db_persons:
 					movies_credits_data.append({
-						"id": credit["id"],
-						"movie_id": movieId,
+						"id": credit["credit_id"],
+						"movie_id": movie["id"],
 						"person_id": credit["id"],
 						"department": credit["department"] if "department" in credit else "Acting",
 						"job": credit["job"] if "job" in credit else "Actor"
 					})
 					if "character" in credit:
 						movies_roles_data.append({
-							"movie_id": movieId,
+							"credit_id": credit["credit_id"],
 							"character": nullify(credit["character"], ""),
-							"order": nullify(credit["order"], 0),
+							"order": credit.get("order", 0),
 						})
 		
 		return pd.DataFrame(movies_credits_data), pd.DataFrame(movies_roles_data)
@@ -207,11 +208,11 @@ class Mapper:
 				"movie_id": movieId,
 				"file_path": image["file_path"],
 				"type": imageType,
-				"aspect_ratio": nullify(image.get("aspect_ratio", None), 0),
-				"height": nullify(image.get("height", None), 0),
-				"width": nullify(image.get("width", None), 0),
-				"vote_average": nullify(image.get("vote_average", None), 0),
-				"vote_count": nullify(image.get("vote_count", None), 0),
+				"aspect_ratio": image.get("aspect_ratio", 0),
+				"height": image.get("height", 0),
+				"width": image.get("width", 0),
+				"vote_average": image.get("vote_average", 0),
+				"vote_count": image.get("vote_count", 0),
 				"iso_639_1": nullify(image.get("iso_639_1", None), "")
 			}
 			for imageType in ["backdrop", "poster", "logo"]
@@ -401,7 +402,10 @@ class Mapper:
 				"iso_639_1": nullify(release_date.get("iso_639_1"), "") if release_date.get("iso_639_1") and release_date.get("iso_639_1") in config.db_languages else None,
 				"note": nullify(release_date.get("note"), ""),
 				"release_type": release_date.get("type"),
-				"descriptors": nullify(release_date.get("descriptors"), [])
+				"descriptors": (
+					"{" + ",".join(f'"{descriptor}"' for descriptor in release_date.get("descriptors")) + "}"
+					if nullify(release_date.get("descriptors"), []) else None
+				)
 			}
 			for movie in movies
 			for release_iso_3166_1 in movie.get("release_dates", {}).get("results", [])
@@ -452,7 +456,7 @@ class Mapper:
 				"tagline": nullify(translation.get("tagline", None), ""),
 				"title": nullify(translation.get("title", None), ""),
 				"homepage": nullify(translation.get("homepage", None), ""),
-				"runtime": nullify(translation.get("runtime", None), 0),
+				"runtime": translation.get("runtime", 0),
 				"iso_639_1": translation["iso_639_1"],
 				"iso_3166_1": translation["iso_3166_1"]
 			}
