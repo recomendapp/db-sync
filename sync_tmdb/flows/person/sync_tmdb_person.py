@@ -68,7 +68,6 @@ def process_missing_persons(config: PersonConfig):
 	try:
 		if len(config.missing_persons) > 0:
 			chunks = list(chunked(config.missing_persons, 500))
-			submits = []
 			for chunk in chunks:
 				person_csv = CSVFile(
 					columns=config.person_columns,
@@ -107,10 +106,8 @@ def process_missing_persons(config: PersonConfig):
 						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=person_details))
 						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=person_details))
 				
-				submits.append(config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv))
-			
-			# Wait for all the submits to finish
-			wait(submits)
+				# submits.append(config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv))
+				config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv).wait()
 	except Exception as e:
 		raise ValueError(f"Failed to process missing persons: {e}")
 	
