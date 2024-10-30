@@ -104,13 +104,20 @@ class MovieConfig(Config):
 	def get_db_data(self):
 		"""Get the data from the database"""
 		try:
-			self.db_languages = self.db_client.get_table(table_name=self.table_language, columns=["iso_639_1"])
-			self.db_countries = self.db_client.get_table(table_name=self.table_country, columns=["iso_3166_1"])
-			self.db_genres = self.db_client.get_table(table_name=self.table_genre, columns=["id"])
-			self.db_keywords = self.db_client.get_table(table_name=self.table_keyword, columns=["id"])
-			self.db_collections = self.db_client.get_table(table_name=self.table_collection, columns=["id"])
-			self.db_companies = self.db_client.get_table(table_name=self.table_company, columns=["id"])
-			self.db_persons = self.db_client.get_table(table_name=self.table_person, columns=["id"])
+			db_languages = self.db_client.get_table(table_name=self.table_language, columns=["iso_639_1"])
+			self.db_languages = set([item[0] for item in db_languages])
+			db_countries = self.db_client.get_table(table_name=self.table_country, columns=["iso_3166_1"])
+			self.db_countries = set([item[0] for item in db_countries])
+			db_genres = self.db_client.get_table(table_name=self.table_genre, columns=["id"])
+			self.db_genres = set([item[0] for item in db_genres])
+			db_keywords = self.db_client.get_table(table_name=self.table_keyword, columns=["id"])
+			self.db_keywords = set([item[0] for item in db_keywords])
+			db_collections = self.db_client.get_table(table_name=self.table_collection, columns=["id"])
+			self.db_collections = set([item[0] for item in db_collections])
+			db_companies = self.db_client.get_table(table_name=self.table_company, columns=["id"])
+			self.db_companies = set([item[0] for item in db_companies])
+			db_persons = self.db_client.get_table(table_name=self.table_person, columns=["id"])
+			self.db_persons = set([item[0] for item in db_persons])
 		except Exception as e:
 			raise ValueError(f"Failed to get the data from the database: {e}")
 	@task
