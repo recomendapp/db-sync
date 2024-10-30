@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  cronicle:
+    image: cronicle-python
+    container_name: cronicle
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3012:3012"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - $HOME/.cronicle/data:/opt/cronicle/data:rw
+      - $HOME/.cronicle/logs:/opt/cronicle/logs:rw
+      - $HOME/.cronicle/plugins:/opt/cronicle/plugins:rw
+      - $HOME/.cronicle/scripts:/opt/cronicle/scripts:rw
+    restart: always
