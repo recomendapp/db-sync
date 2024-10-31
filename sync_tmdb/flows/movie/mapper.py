@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from .config import MovieConfig as Config
 from ...utils.nullify import nullify
 
@@ -21,7 +22,9 @@ class Mapper:
 				"belongs_to_collection": movie.get("belongs_to_collection", {}).get("id") if movie.get("belongs_to_collection") and movie.get("belongs_to_collection").get("id") in config.db_collections else None,
 			}
 		]
-		return pd.DataFrame(movie_data)
+		df = pd.DataFrame(movie_data)
+		df = df.convert_dtypes()
+		return df
 	
 	@staticmethod
 	def movies(config: Config, movies: list[dict]) -> pd.DataFrame:
@@ -381,7 +384,10 @@ class Mapper:
 				"iso_639_1": nullify(release_date.get("iso_639_1"), "") if release_date.get("iso_639_1") and release_date.get("iso_639_1") in config.db_languages else None,
 				"note": nullify(release_date.get("note"), ""),
 				"release_type": release_date.get("type"),
-				"descriptors": nullify(release_date.get("descriptors"), [])
+				"descriptors": (
+					"{" + ",".join(f'"{descriptor}"' for descriptor in release_date.get("descriptors")) + "}"
+					if nullify(release_date.get("descriptors"), []) else None
+				)
 			}
 			for release_iso_3166_1 in release_dates
 			for release_date in release_iso_3166_1.get("release_dates", [])
@@ -461,6 +467,9 @@ class Mapper:
 				"iso_3166_1": translation["iso_3166_1"]
 			}
 			for translation in movie.get("translations", {}).get("translations", [])
+			# only add if there is something to translate (overview, tagline, title, homepage, runtime)
+			# check if there are empty strings or 0
+			if nullify(translation.get("overview", None), "") or nullify(translation.get("tagline", None), "") or nullify(translation.get("title", None), "") or nullify(translation.get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
 		]
 
 		return pd.DataFrame(movie_translation_data)
@@ -483,6 +492,7 @@ class Mapper:
 			for translation in movie.get("translations", {}).get("translations", [])
 			# only add if there is something to translate (overview, tagline, title, homepage, runtime)
 			# check if there are empty strings or 0
+			if nullify(translation.get("overview", None), "") or nullify(translation.get("tagline", None), "") or nullify(translation.get("title", None), "") or nullify(translation.get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
 		]
 
 		return pd.DataFrame(movies_translation_data)
