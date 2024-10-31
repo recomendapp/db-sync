@@ -8,16 +8,16 @@ import shutil
 
 def create_csv(data: pd.DataFrame, tmp_directory: str = None, prefix: str = "data") -> str:
 	"""
-    Create a CSV file with the given data.
+	Create a CSV file with the given data.
 
-    Args:
-        data (pd.DataFrame): The data to save in the CSV file.
-        tmp_directory (str, optionnel): The directory where to save the CSV file. Default: None.
-        prefix (str, optionnel): The prefix of the CSV file. Default: "data".
+	Args:
+		data (pd.DataFrame): The data to save in the CSV file.
+		tmp_directory (str, optionnel): The directory where to save the CSV file. Default: None.
+		prefix (str, optionnel): The prefix of the CSV file. Default: "data".
 
-    Returns:
-        str: The path to the CSV file.
-    """
+	Returns:
+		str: The path to the CSV file.
+	"""
 
 	if tmp_directory:
 		if not os.path.exists(tmp_directory):
@@ -109,21 +109,22 @@ def decompress_file(file_path: str, deleteCompressedFile: bool = True) -> str:
 	return decompressed_file_path
 
 def remove_duplicates(input_file: str, output_file: str, conflict_columns: list):
-    """
-    Delete duplicates from a CSV file.
+	"""
+	Delete duplicates from a CSV file.
 
-    :param input_file: The path to the input CSV file.
+	:param input_file: The path to the input CSV file.
 	:param output_file: The path to the output CSV file.
 	:param conflict_columns: The columns to use to detect duplicates.
-    """
-    try:
-        # Read the CSV file
-        df = pd.read_csv(input_file)
+	"""
+	try:
+		# Read the CSV file
+		df = pd.read_csv(input_file)
+		df = df.convert_dtypes()
 
-        # Delete duplicates
-        df_cleaned = df.drop_duplicates(subset=conflict_columns, keep='first')
+		# Delete duplicates
+		df_cleaned = df.drop_duplicates(subset=conflict_columns, keep='first')
 
-        # Save the cleaned CSV file
-        df_cleaned.to_csv(output_file, index=False)
-    except Exception as e:
-        raise ValueError(f"Failed to remove duplicates: {e}")
+		# Save the cleaned CSV file
+		df_cleaned.to_csv(output_file, index=False)
+	except Exception as e:
+		raise ValueError(f"Failed to remove duplicates: {e}")
