@@ -72,7 +72,7 @@ def process_missing_movies(config: MovieConfig):
 	try:
 		if len(config.missing_movies) > 0:
 			config.get_db_data()
-			chunks = list(chunked(config.missing_movies, 50))
+			chunks = list(chunked(config.missing_movies, 500))
 			for chunk in chunks:
 				csv: dict[str, CSVFile] = {}
 				csv["movie"] = CSVFile(
