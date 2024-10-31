@@ -48,3 +48,37 @@ deployments:
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
+
+- name: sync_tmdb_movie
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB movie data
+  entrypoint: sync_tmdb/flows/movie/sync_tmdb_movie.py:sync_tmdb_movie
+  parameters: {}
+  work_pool:
+    name: VPS_Worker_1
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+  schedules: []
+
+- name: sync_tmdb_person
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB person data
+  entrypoint: sync_tmdb/flows/person/sync_tmdb_person.py:sync_tmdb_person
+  parameters: {}
+  work_pool:
+    name: VPS_Worker_1
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+  schedules: []

@@ -23,6 +23,7 @@ class Mapper:
 			}
 		]
 		df = pd.DataFrame(movie_data)
+		# df = df.replace({np.nan: None})
 		df = df.convert_dtypes()
 		return df
 	
@@ -46,6 +47,7 @@ class Mapper:
 			for movie in movies
 		]
 		df = pd.DataFrame(movies_data)
+		# df = df.replace({np.nan: None})
 		df = df.convert_dtypes()
 		return df
 
@@ -467,8 +469,6 @@ class Mapper:
 				"iso_3166_1": translation["iso_3166_1"]
 			}
 			for translation in movie.get("translations", {}).get("translations", [])
-			# only add if there is something to translate (overview, tagline, title, homepage, runtime)
-			# check if there are empty strings or 0
 			if nullify(translation.get("overview", None), "") or nullify(translation.get("tagline", None), "") or nullify(translation.get("title", None), "") or nullify(translation.get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
 		]
 
@@ -490,8 +490,6 @@ class Mapper:
 			}
 			for movie in movies
 			for translation in movie.get("translations", {}).get("translations", [])
-			# only add if there is something to translate (overview, tagline, title, homepage, runtime)
-			# check if there are empty strings or 0
 			if nullify(translation.get("overview", None), "") or nullify(translation.get("tagline", None), "") or nullify(translation.get("title", None), "") or nullify(translation.get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
 		]
 
