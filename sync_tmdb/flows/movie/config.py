@@ -229,6 +229,111 @@ class MovieConfig(Config):
 					with open(csv["movie_videos"].file_path, "r") as f:
 						cursor.copy_expert(f"COPY {temp_movie_videos} ({','.join(self.movie_videos_columns)}) FROM STDIN WITH CSV HEADER", f)
 
+					# Delete all outdated alternative titles before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_alternative_titles}
+						WHERE {self.movie_alternative_titles_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated credits before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_credits}
+						WHERE {self.movie_credits_columns[1]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+					# No need to delete roles because is one-to-one relationship with credits
+
+					# Delete all outdated external ids before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_external_ids}
+						WHERE {self.movie_external_ids_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated genres before inserting
+					cursor.execute(f"""	
+						DELETE FROM {self.table_movie_genres}
+						WHERE {self.movie_genres_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated images before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_images}
+						WHERE {self.movie_images_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated keywords before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_keywords}
+						WHERE {self.movie_keywords_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated origin countries before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_origin_country}
+						WHERE {self.movie_origin_country_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated production companies before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_production_companies}
+						WHERE {self.movie_production_companies_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated production countries before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_production_countries}
+						WHERE {self.movie_production_countries_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated release dates before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_release_dates}
+						WHERE {self.movie_release_dates_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated spoken languages before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_spoken_languages}
+						WHERE {self.movie_spoken_languages_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated translations before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_translations}
+						WHERE {self.movie_translations_columns[0]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
+					# Delete all outdated videos before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_movie_videos}
+						WHERE {self.movie_videos_columns[1]} IN (
+							SELECT id FROM {temp_movie}
+						);
+					""")
+
 					insert_into(
 						cursor=cursor,
 						table=self.table_movie,
@@ -244,8 +349,8 @@ class MovieConfig(Config):
 						table=self.table_movie_alternative_titles,
 						temp_table=temp_movie_alternative_titles,
 						columns=self.movie_alternative_titles_columns,
-						on_conflict=[],
-						on_conflict_update=[]
+						# on_conflict=[],
+						# on_conflict_update=[]
 					)
 
 					insert_into(
@@ -253,8 +358,8 @@ class MovieConfig(Config):
 						table=self.table_movie_credits,
 						temp_table=temp_movie_credits,
 						columns=self.movie_credits_columns,
-						on_conflict=self.movie_credits_on_conflict,
-						on_conflict_update=self.movie_credits_on_conflict_update
+						# on_conflict=self.movie_credits_on_conflict,
+						# on_conflict_update=self.movie_credits_on_conflict_update
 					)
 
 					insert_into(
@@ -262,8 +367,8 @@ class MovieConfig(Config):
 						table=self.table_movie_external_ids,
 						temp_table=temp_movie_external_ids,
 						columns=self.movie_external_ids_columns,
-						on_conflict=self.movie_external_ids_on_conflict,
-						on_conflict_update=self.movie_external_ids_on_conflict_update
+						# on_conflict=self.movie_external_ids_on_conflict,
+						# on_conflict_update=self.movie_external_ids_on_conflict_update
 					)
 
 					insert_into(
@@ -271,8 +376,8 @@ class MovieConfig(Config):
 						table=self.table_movie_genres,
 						temp_table=temp_movie_genres,
 						columns=self.movie_genres_columns,
-						on_conflict=self.movie_genres_on_conflict,
-						on_conflict_update=self.movie_genres_on_conflict_update
+						# on_conflict=self.movie_genres_on_conflict,
+						# on_conflict_update=self.movie_genres_on_conflict_update
 					)
 
 					insert_into(
@@ -280,8 +385,8 @@ class MovieConfig(Config):
 						table=self.table_movie_images,
 						temp_table=temp_movie_images,
 						columns=self.movie_images_columns,
-						on_conflict=self.movie_images_on_conflict,
-						on_conflict_update=self.movie_images_on_conflict_update
+						# on_conflict=self.movie_images_on_conflict,
+						# on_conflict_update=self.movie_images_on_conflict_update
 					)
 
 					insert_into(
@@ -289,8 +394,8 @@ class MovieConfig(Config):
 						table=self.table_movie_keywords,
 						temp_table=temp_movie_keywords,
 						columns=self.movie_keywords_columns,
-						on_conflict=self.movie_keywords_on_conflict,
-						on_conflict_update=self.movie_keywords_on_conflict_update
+						# on_conflict=self.movie_keywords_on_conflict,
+						# on_conflict_update=self.movie_keywords_on_conflict_update
 					)
 
 					insert_into(
@@ -298,8 +403,8 @@ class MovieConfig(Config):
 						table=self.table_movie_origin_country,
 						temp_table=temp_movie_origin_country,
 						columns=self.movie_origin_country_columns,
-						on_conflict=self.movie_origin_country_on_conflict,
-						on_conflict_update=self.movie_origin_country_on_conflict_update
+						# on_conflict=self.movie_origin_country_on_conflict,
+						# on_conflict_update=self.movie_origin_country_on_conflict_update
 					)
 
 					insert_into(
@@ -307,8 +412,8 @@ class MovieConfig(Config):
 						table=self.table_movie_production_companies,
 						temp_table=temp_movie_production_companies,
 						columns=self.movie_production_companies_columns,
-						on_conflict=self.movie_production_companies_on_conflict,
-						on_conflict_update=self.movie_production_companies_on_conflict_update
+						# on_conflict=self.movie_production_companies_on_conflict,
+						# on_conflict_update=self.movie_production_companies_on_conflict_update
 					)
 
 					insert_into(
@@ -316,8 +421,8 @@ class MovieConfig(Config):
 						table=self.table_movie_production_countries,
 						temp_table=temp_movie_production_countries,
 						columns=self.movie_production_countries_columns,
-						on_conflict=self.movie_production_countries_on_conflict,
-						on_conflict_update=self.movie_production_countries_on_conflict_update
+						# on_conflict=self.movie_production_countries_on_conflict,
+						# on_conflict_update=self.movie_production_countries_on_conflict_update
 					)
 
 					insert_into(
@@ -325,8 +430,8 @@ class MovieConfig(Config):
 						table=self.table_movie_release_dates,
 						temp_table=temp_movie_release_dates,
 						columns=self.movie_release_dates_columns,
-						on_conflict=self.movie_release_dates_on_conflict,
-						on_conflict_update=self.movie_release_dates_on_conflict_update
+						# on_conflict=self.movie_release_dates_on_conflict,
+						# on_conflict_update=self.movie_release_dates_on_conflict_update
 					)
 
 					insert_into(
@@ -334,8 +439,8 @@ class MovieConfig(Config):
 						table=self.table_movie_roles,
 						temp_table=temp_movie_roles,
 						columns=self.movie_roles_columns,
-						on_conflict=self.movie_roles_on_conflict,
-						on_conflict_update=self.movie_roles_on_conflict_update
+						# on_conflict=self.movie_roles_on_conflict,
+						# on_conflict_update=self.movie_roles_on_conflict_update
 					)
 
 					insert_into(
@@ -343,8 +448,8 @@ class MovieConfig(Config):
 						table=self.table_movie_spoken_languages,
 						temp_table=temp_movie_spoken_languages,
 						columns=self.movie_spoken_languages_columns,
-						on_conflict=self.movie_spoken_languages_on_conflict,
-						on_conflict_update=self.movie_spoken_languages_on_conflict_update
+						# on_conflict=self.movie_spoken_languages_on_conflict,
+						# on_conflict_update=self.movie_spoken_languages_on_conflict_update
 					)
 
 					insert_into(
@@ -352,8 +457,8 @@ class MovieConfig(Config):
 						table=self.table_movie_translations,
 						temp_table=temp_movie_translations,
 						columns=self.movie_translations_columns,
-						on_conflict=self.movie_translations_on_conflict,
-						on_conflict_update=self.movie_translations_on_conflict_update
+						# on_conflict=self.movie_translations_on_conflict,
+						# on_conflict_update=self.movie_translations_on_conflict_update
 					)
 
 					insert_into(
@@ -361,177 +466,9 @@ class MovieConfig(Config):
 						table=self.table_movie_videos,
 						temp_table=temp_movie_videos,
 						columns=self.movie_videos_columns,
-						on_conflict=self.movie_videos_on_conflict,
-						on_conflict_update=self.movie_videos_on_conflict_update
+						# on_conflict=self.movie_videos_on_conflict,
+						# on_conflict_update=self.movie_videos_on_conflict_update
 					)
-
-					# Delete outdated alternative titles
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_alternative_titles}
-						WHERE ({','.join(self.movie_alternative_titles_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_alternative_titles_on_conflict)}
-							FROM {temp_movie_alternative_titles}
-						)
-						AND {self.movie_alternative_titles_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated credits
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_credits}
-						WHERE ({','.join(self.movie_credits_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_credits_on_conflict)}
-							FROM {temp_movie_credits}
-						)
-						AND {self.movie_credits_columns[1]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated external ids
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_external_ids}
-						WHERE ({','.join(self.movie_external_ids_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_external_ids_on_conflict)}
-							FROM {temp_movie_external_ids}
-						)
-						AND {self.movie_external_ids_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated genres
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_genres}
-						WHERE ({','.join(self.movie_genres_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_genres_on_conflict)}
-							FROM {temp_movie_genres}
-						)
-						AND {self.movie_genres_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated images
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_images}
-						WHERE ({','.join(self.movie_images_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_images_on_conflict)}
-							FROM {temp_movie_images}
-						)
-						AND {self.movie_images_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated keywords
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_keywords}
-						WHERE ({','.join(self.movie_keywords_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_keywords_on_conflict)}
-							FROM {temp_movie_keywords}
-						)
-						AND {self.movie_keywords_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated origin countries
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_origin_country}
-						WHERE ({','.join(self.movie_origin_country_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_origin_country_on_conflict)}
-							FROM {temp_movie_origin_country}
-						)
-						AND {self.movie_origin_country_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated production companies
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_production_companies}
-						WHERE ({','.join(self.movie_production_companies_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_production_companies_on_conflict)}
-							FROM {temp_movie_production_companies}
-						)
-						AND {self.movie_production_companies_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated production countries
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_production_countries}
-						WHERE ({','.join(self.movie_production_countries_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_production_countries_on_conflict)}
-							FROM {temp_movie_production_countries}
-						)
-						AND {self.movie_production_countries_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated release dates
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_release_dates}
-						WHERE ({','.join(self.movie_release_dates_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_release_dates_on_conflict)}
-							FROM {temp_movie_release_dates}
-						)
-						AND {self.movie_release_dates_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated roles
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_roles}
-						WHERE ({','.join(self.movie_roles_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_roles_on_conflict)}
-							FROM {temp_movie_roles}
-						)
-						AND {self.movie_roles_columns[0]} IN (
-							SELECT id FROM {temp_movie_credits}
-						);
-					""")
-
-					# Delete outdated spoken languages
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_spoken_languages}
-						WHERE ({','.join(self.movie_spoken_languages_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_spoken_languages_on_conflict)}
-							FROM {temp_movie_spoken_languages}
-						)
-						AND {self.movie_spoken_languages_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated translations
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_translations}
-						WHERE ({','.join(self.movie_translations_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_translations_on_conflict)}
-							FROM {temp_movie_translations}
-						)
-						AND {self.movie_translations_columns[0]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
-
-					# Delete outdated videos
-					cursor.execute(f"""
-						DELETE FROM {self.table_movie_videos}
-						WHERE ({','.join(self.movie_videos_on_conflict)}) NOT IN (
-							SELECT {','.join(self.movie_videos_on_conflict)}
-							FROM {temp_movie_videos}
-						)
-						AND {self.movie_videos_columns[1]} IN (
-							SELECT id FROM {temp_movie}
-						);
-					""")
 
 					conn.commit()
 

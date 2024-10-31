@@ -118,12 +118,11 @@ def remove_duplicates(input_file: str, output_file: str, conflict_columns: list)
 	"""
 	try:
 		# Read the CSV file
-		df = pd.read_csv(input_file)
+		df = pd.read_csv(input_file, na_filter=False)
 		df = df.convert_dtypes()
 
 		# Delete duplicates
 		df_cleaned = df.drop_duplicates(subset=conflict_columns, keep='first')
-
 		# Save the cleaned CSV file
 		df_cleaned.to_csv(output_file, index=False)
 	except Exception as e:

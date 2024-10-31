@@ -460,16 +460,16 @@ class Mapper:
 		movie_translation_data = [
 			{
 				"movie_id": movie["id"],
-				"overview": nullify(translation.get("overview", None), ""),
-				"tagline": nullify(translation.get("tagline", None), ""),
-				"title": nullify(translation.get("title", None), ""),
-				"homepage": nullify(translation.get("homepage", None), ""),
-				"runtime": translation.get("runtime", 0),
+				"overview": nullify(translation["data"].get("overview", None), ""),
+				"tagline": nullify(translation["data"].get("tagline", None), ""),
+				"title": nullify(translation["data"].get("title", None), ""),
+				"homepage": nullify(translation["data"].get("homepage", None), ""),
+				"runtime": translation["data"].get("runtime", 0),
 				"iso_639_1": translation["iso_639_1"],
 				"iso_3166_1": translation["iso_3166_1"]
 			}
 			for translation in movie.get("translations", {}).get("translations", [])
-			if nullify(translation.get("overview", None), "") or nullify(translation.get("tagline", None), "") or nullify(translation.get("title", None), "") or nullify(translation.get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
+			if nullify(translation["data"].get("overview", None), "") or nullify(translation["data"].get("tagline", None), "") or nullify(translation["data"].get("title", None), "") or nullify(translation["data"].get("homepage", None), "") or nullify(translation["data"].get("runtime", 0), 0)
 		]
 
 		return pd.DataFrame(movie_translation_data)
@@ -480,17 +480,17 @@ class Mapper:
 		movies_translation_data = [
 			{
 				"movie_id": movie["id"],
-				"overview": nullify(translation.get("overview", None), ""),
-				"tagline": nullify(translation.get("tagline", None), ""),
-				"title": nullify(translation.get("title", None), ""),
-				"homepage": nullify(translation.get("homepage", None), ""),
+				"overview": nullify(translation["data"].get("overview", None), ""),
+				"tagline": nullify(translation["data"].get("tagline", None), ""),
+				"title": nullify(translation["data"].get("title", None), ""),
+				"homepage": nullify(translation["data"].get("homepage", None), ""),
 				"runtime": translation.get("runtime", 0),
 				"iso_639_1": translation["iso_639_1"],
 				"iso_3166_1": translation["iso_3166_1"]
 			}
 			for movie in movies
 			for translation in movie.get("translations", {}).get("translations", [])
-			if nullify(translation.get("overview", None), "") or nullify(translation.get("tagline", None), "") or nullify(translation.get("title", None), "") or nullify(translation.get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
+			if nullify(translation["data"].get("overview", None), "") or nullify(translation["data"].get("tagline", None), "") or nullify(translation["data"].get("title", None), "") or nullify(translation["data"].get("homepage", None), "") or nullify(translation.get("runtime", 0), 0)
 		]
 
 		return pd.DataFrame(movies_translation_data)
