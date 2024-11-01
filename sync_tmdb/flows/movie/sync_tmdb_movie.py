@@ -58,6 +58,10 @@ def get_tmdb_movie_details(config: MovieConfig, movie_id: int) -> dict:
 		main_video_languages = "en,fr,es,ja,de"
 		# TMDB limit the number of languages to 5 
 		movie = config.tmdb_client.request(f"movie/{movie_id}", {"append_to_response": "alternative_titles,credits,external_ids,keywords,release_dates,translations,videos", "include_video_language": main_video_languages})
+
+		# Protect against adult content
+		if movie["adult"]:
+			return None
 		images = config.tmdb_client.request(f"movie/{movie_id}/images")
 		# Add images to the movie details
 		movie["images"] = images
