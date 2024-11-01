@@ -107,10 +107,10 @@ def process_missing_persons(config: PersonConfig):
 						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=person_details))
 				
 				# submits.append(config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv))
-				config.logger.info(f"Submitting {len(person_csv)} persons")
+				config.logger.info(f"Push persons to the database...")
 				push_future = config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv)
 				push_future.result(raise_on_failure=True)
-				config.logger.info(f"Succesfully submitted {len(person_csv)} persons")
+				config.logger.info(f"Succesfully submitted persons to the database")
 
 	except Exception as e:
 		raise ValueError(f"Failed to process missing persons: {e}")
