@@ -89,7 +89,8 @@ class TMDBClient:
 					raise ValueError(f"Failed to get changed ids for page {i}: {results}")
 			
 			if len(ids) != number_of_results:
-				raise ValueError(f"Number of ids does not match the number of results: {len(ids)} != {number_of_results}")
+				self.logger.warning(f"Number of ids does not match the number of results: {len(ids)} != {number_of_results}")
+				# raise ValueError(f"Number of ids does not match the number of results: {len(ids)} != {number_of_results}")
 
 			return ids
 		except Exception as e:

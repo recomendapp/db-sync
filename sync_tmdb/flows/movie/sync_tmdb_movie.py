@@ -11,7 +11,6 @@ import ast
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
-from prefect.futures import wait
 
 from .config import MovieConfig
 from .mapper import Mapper
