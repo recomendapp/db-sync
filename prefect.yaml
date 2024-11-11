@@ -54,6 +54,7 @@ deployments:
   tags:
   - tmdb
   description: Sync TMDB movie data
+  schedules: []
   entrypoint: sync_tmdb/flows/movie/sync_tmdb_movie.py:sync_tmdb_movie
   parameters: {}
   work_pool:
@@ -64,13 +65,13 @@ deployments:
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
-  schedules: []
 
 - name: sync_tmdb_person
   version: 1.0.0
   tags:
   - tmdb
   description: Sync TMDB person data
+  schedules: []
   entrypoint: sync_tmdb/flows/person/sync_tmdb_person.py:sync_tmdb_person
   parameters: {}
   work_pool:
@@ -81,4 +82,3 @@ deployments:
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
-  schedules: []
