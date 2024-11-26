@@ -41,7 +41,7 @@ deployments:
   entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
   parameters: {}
   work_pool:
-    name: VPS_Worker_1
+    name: worker_1
     job_variables:
       env:
         EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
@@ -58,7 +58,7 @@ deployments:
   entrypoint: sync_tmdb/flows/movie/sync_tmdb_movie.py:sync_tmdb_movie
   parameters: {}
   work_pool:
-    name: VPS_Worker_1
+    name: worker_1
     job_variables:
       env:
         EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
@@ -75,7 +75,7 @@ deployments:
   entrypoint: sync_tmdb/flows/person/sync_tmdb_person.py:sync_tmdb_person
   parameters: {}
   work_pool:
-    name: VPS_Worker_1
+    name: worker_1
     job_variables:
       env:
         EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
