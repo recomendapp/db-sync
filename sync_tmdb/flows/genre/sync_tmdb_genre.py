@@ -51,7 +51,7 @@ def get_tmdb_genres(config: GenreConfig) -> tuple:
 
 def get_db_genres(config: GenreConfig) -> set:
 	try:
-		with config.db_client.get_connection() as conn:
+		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT id FROM {config.table_genre}")
 				db_genres = cursor.fetchall()
@@ -66,7 +66,7 @@ def process_extra_genres(config: GenreConfig, extra_genres: set):
 	try:
 		if len(extra_genres) > 0:
 			config.logger.warning(f"Found {len(extra_genres)} extra genres in the database")
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:
@@ -91,7 +91,7 @@ def process_missing_genres(config: GenreConfig, tmdb_genres: list, missing_genre
 		config.genre_translation = create_csv(data=mappers.genre_translation, tmp_directory=config.tmp_directory, prefix="genre_translation")
 
 		# Load the CSV files into the database using copy
-		with config.db_client.get_connection() as conn:
+		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				conn.autocommit = False
 				try:

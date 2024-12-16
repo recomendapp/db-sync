@@ -29,7 +29,7 @@ def get_tmdb_languages(config: LanguageConfig) -> set:
 
 def get_db_languages(config: LanguageConfig) -> set:
 	try:
-		with config.db_client.get_connection() as conn:
+		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT {config.language_column} FROM {config.table_language}")
 				db_languages = cursor.fetchall()
@@ -44,7 +44,7 @@ def process_extra_languages(config: LanguageConfig, extra_languages: set):
 	try:
 		if len(extra_languages) > 0:
 			config.logger.warning(f"Found {len(extra_languages)} extra languages in the database")
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:
@@ -61,7 +61,7 @@ def process_missing_languages(config: LanguageConfig, missing_languages_set: set
 		if len(missing_languages_set) > 0:
 			config.logger.warning(f"Found {len(missing_languages_set)} missing languages in the database")
 		
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:

@@ -28,7 +28,7 @@ def get_tmdb_countries(config: CountryConfig) -> set:
 
 def get_db_countries(config: CountryConfig) -> set:
 	try:
-		with config.db_client.get_connection() as conn:
+		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT {config.country_column} FROM {config.table_country}")
 				db_countries = cursor.fetchall()
@@ -43,7 +43,7 @@ def process_extra_countries(config: CountryConfig, extra_countries: set):
 	try:
 		if len(extra_countries) > 0:
 			config.logger.warning(f"Found {len(extra_countries)} extra countries in the database")
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:
@@ -60,7 +60,7 @@ def process_missing_countries(config: CountryConfig, missing_countries_set: set)
 		if len(missing_countries_set) > 0:
 			config.logger.warning(f"Found {len(missing_countries_set)} missing countries in the database")
 
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:

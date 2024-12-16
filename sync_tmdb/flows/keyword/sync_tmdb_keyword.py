@@ -32,7 +32,7 @@ def get_tmdb_keywords(config: KeywordConfig) -> tuple:
 
 def get_db_keywords(config: KeywordConfig) -> set:
 	try:
-		with config.db_client.get_connection() as conn:
+		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT id FROM {config.table_keyword}")
 				db_keywords = cursor.fetchall()
@@ -47,7 +47,7 @@ def process_extra_keywords(config: KeywordConfig, extra_keywords: set):
 	try:
 		if len(extra_keywords) > 0:
 			config.logger.warning(f"Found {len(extra_keywords)} extra keywords in the database")
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:
@@ -72,7 +72,7 @@ def process_missing_keywords(config: KeywordConfig, tmdb_keywords: list, missing
 			config.keyword = create_csv(data=mappers.keyword, tmp_directory=config.tmp_directory, prefix="keyword")
 
 			# Load the CSV files into the database using copy
-			with config.db_client.get_connection() as conn:
+			with config.db_client.connection() as conn:
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:
