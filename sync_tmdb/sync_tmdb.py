@@ -26,6 +26,7 @@ def sync_tmdb(current_date: date = date.today()):
 		flows.sync_tmdb_keyword(date=current_date)
 		flows.sync_tmdb_collection(date=current_date)
 		flows.sync_tmdb_company(date=current_date)
+		flows.sync_tmdb_network(date=current_date)
 		flows.sync_tmdb_person(date=current_date)
 		flows.sync_tmdb_movie(date=current_date)
 	except Exception as e:
