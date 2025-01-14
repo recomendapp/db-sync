@@ -7,3 +7,4 @@ from .company import sync_tmdb_company
 from .network import sync_tmdb_network
 from .person import sync_tmdb_person
 from .movie import sync_tmdb_movie
+from .serie import sync_tmdb_serie

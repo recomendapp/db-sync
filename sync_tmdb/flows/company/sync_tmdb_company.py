@@ -49,14 +49,8 @@ def get_db_companies(config: CompanyConfig) -> set:
 @task
 def get_tmdb_company_details(config: CompanyConfig, company_id: int) -> dict:
 	try:
-		company_details = config.tmdb_client.request(f"company/{company_id}")
-		company_images = config.tmdb_client.request(f"company/{company_id}/images")
-		company_alternative_names = config.tmdb_client.request(f"company/{company_id}/alternative_names")
-		return {
-			"details": company_details,
-			"images": company_images,
-			"alternative_names": company_alternative_names
-		}
+		company_details = config.tmdb_client.request(f"company/{company_id}", {"append_to_response": "alternative_names,images"})
+		return company_details
 	except Exception as e:
 		config.logger.error(f"Failed to get company details for {company_id}: {e}")
 		return None
@@ -67,7 +61,6 @@ def process_missing_companies(config: CompanyConfig):
 	try:
 		if len(config.missing_companies) > 0:
 			chunks = list(chunked(config.missing_companies, 100))
-			submits = []
 			for chunk in chunks:
 				company_csv = CSVFile(
 					columns=config.company_columns,
@@ -87,19 +80,18 @@ def process_missing_companies(config: CompanyConfig):
 
 				companies_details_futures = get_tmdb_company_details.map(config=config, company_id=chunk)
 
-
 				for company_details_response in companies_details_futures:
 					company_data = company_details_response.result()
 					if company_data is not None:
-						company_csv.append(rows_data=Mapper.company(company=company_data["details"]))
-						company_image_csv.append(rows_data=Mapper.company_image(company=company_data["images"]))
-						company_alternative_name_csv.append(rows_data=Mapper.company_alternative_name(company=company_data["alternative_names"]))
+						company_csv.append(rows_data=Mapper.company(company=company_data))
+						company_image_csv.append(rows_data=Mapper.company_image(company=company_data))
+						company_alternative_name_csv.append(rows_data=Mapper.company_alternative_name(company=company_data))
 				
-				submits.append(config.push.submit(company_csv=company_csv, company_image_csv=company_image_csv, company_alternative_name_csv=company_alternative_name_csv))
-			
-				break
-			# Wait for all the submits to finish
-			wait(submits)
+				config.logger.info(f"Pushing companies to the database...")
+				push_future = config.push.submit(company_csv=company_csv, company_image_csv=company_image_csv, company_alternative_name_csv=company_alternative_name_csv)
+				push_future.result(raise_on_failure=True)
+				config.logger.info(f"Succesfully submitted companies to the database")
+		
 	except Exception as e:
 		raise ValueError(f"Failed to process missing companies: {e}")
 

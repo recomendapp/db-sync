@@ -60,7 +60,6 @@ def process_missing_networks(config: NetworkConfig):
 	try:
 		if len(config.missing_networks) > 0:
 			chunks = list(chunked(config.missing_networks, 100))
-			submits = []
 			for chunk in chunks:
 				network_csv = CSVFile(
 					columns=config.network_columns,
@@ -88,11 +87,11 @@ def process_missing_networks(config: NetworkConfig):
 						network_image_csv.append(rows_data=Mapper.network_image(network=network_data))
 						network_alternative_name_csv.append(rows_data=Mapper.network_alternative_name(network=network_data))
 				
-				submits.append(config.push.submit(network_csv=network_csv, network_image_csv=network_image_csv, network_alternative_name_csv=network_alternative_name_csv))
-			
-				break
-			# Wait for all the submits to finish
-			wait(submits)
+				config.logger.info(f"Pushing networks to the database...")
+				push_future = config.push.submit(network_csv=network_csv, network_image_csv=network_image_csv, network_alternative_name_csv=network_alternative_name_csv)
+				push_future.result(raise_on_failure=True)
+				config.logger.info(f"Succesfully submitted networks to the database")
+
 	except Exception as e:
 		raise ValueError(f"Failed to process missing networks: {e}")
 

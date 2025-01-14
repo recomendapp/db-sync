@@ -181,9 +181,7 @@ def process_missing_movies(config: MovieConfig):
 				push_future = config.push.submit(csv=csv)
 				push_future.result(raise_on_failure=True)
 				config.logger.info(f"Successfully pushed movies to the database")
-			
-			# Wait for all the submits to finish
-			# wait(submits)
+
 	except Exception as e:
 		raise ValueError(f"Failed to process missing movies: {e}")
 	
