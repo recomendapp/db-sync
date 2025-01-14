@@ -20,7 +20,7 @@ class Mapper:
 	@staticmethod
 	def company_image(company: dict) -> pd.DataFrame:
 		companyId = company["id"]
-		images = company["logos"]
+		images = company.get("images", {}).get("logos", [])
 		company_image_data = [
 			{
 				"id": image["id"],
@@ -41,7 +41,7 @@ class Mapper:
 	@staticmethod
 	def company_alternative_name(company: dict) -> pd.DataFrame:
 		companyId = company["id"]
-		alternative_names = company["results"]
+		alternative_names = company.get("alternative_names", []).get("results", [])
 		company_alternative_name_data = [
 			{
 				"company": companyId,

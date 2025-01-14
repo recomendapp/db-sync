@@ -65,7 +65,6 @@ def process_missing_collections(config: CollectionConfig):
 	try:
 		if len(config.missing_collections) > 0:
 			chunks = list(chunked(config.missing_collections, 100))
-			submits = []
 			for chunk in chunks:
 				collection_csv = CSVFile(
 					columns=config.collection_columns,
@@ -92,10 +91,11 @@ def process_missing_collections(config: CollectionConfig):
 						collection_translation_csv.append(rows_data=Mapper.collection_translation(collection_data["translations"]))
 						collection_image_csv.append(rows_data=Mapper.collection_image(collection=collection_data["images"]))
 
-				submits.append(config.push.submit(collection_csv=collection_csv, collection_translation_csv=collection_translation_csv, collection_image_csv=collection_image_csv))
-			
-			# Wait for all the submits to finish
-			wait(submits)
+				config.logger.info(f"Pushing collections to the database...")
+				push_future = config.push.submit(collection_csv=collection_csv, collection_translation_csv=collection_translation_csv, collection_image_csv=collection_image_csv)
+				push_future.result(raise_on_failure=True)
+				config.logger.info(f"Succesfully submitted collections to the database")
+
 	except Exception as e:
 		raise ValueError(f"Failed to process missing collections: {e}")
 	
