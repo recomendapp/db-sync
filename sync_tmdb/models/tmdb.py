@@ -1,12 +1,12 @@
 from prefect import task
 from prefect.logging import get_run_logger
 from prefect.blocks.system import Secret
-# from prefect.concurrency.sync import rate_limit
+from prefect.concurrency.sync import rate_limit
 from itertools import cycle
 import requests
 from datetime import date
 from ..utils.file_manager import download_file, decompress_file
-from ..utils.concurreny import limit_concurrency
+# from ..utils.concurreny import limit_concurrency
 import os
 import json
 
@@ -33,9 +33,9 @@ class TMDBClient:
 		return next(self.api_key_cycle)
 	
 	@task 
-	@limit_concurrency(max_workers=20)
+	# @limit_concurrency(max_workers=20)
 	def request(self, endpoint: str, params: dict = {}) -> dict:
-		# rate_limit("tmdb-api")
+		rate_limit("tmdb-api")
 		self.api_key = self._get_next_api_key()
 		url = f"{self.base_url}/{endpoint}"
 		params["api_key"] = self.api_key
