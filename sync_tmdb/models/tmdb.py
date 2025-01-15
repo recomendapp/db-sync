@@ -1,7 +1,6 @@
 from prefect import task
 from prefect.logging import get_run_logger
 from prefect.blocks.system import Secret
-from prefect.cache_policies import NO_CACHE
 # from prefect.concurrency.sync import rate_limit
 from itertools import cycle
 import requests
@@ -33,7 +32,7 @@ class TMDBClient:
 	def _get_next_api_key(self) -> str:
 		return next(self.api_key_cycle)
 	
-	@task(cache_policy=NO_CACHE)
+	@task
 	@limit_concurrency(max_workers=20)
 	def request(self, endpoint: str, params: dict = {}) -> dict:
 		# rate_limit("tmdb-api")
@@ -47,7 +46,7 @@ class TMDBClient:
 			raise ValueError(f"Failed to get data from TMDB: {data}")
 		return data
 
-	@task(cache_policy=NO_CACHE)
+	@task
 	def get_export_ids(self, type: str, date: date) -> list:
 		try:
 			tmdb_export_collection_url_template = "http://files.tmdb.org/p/exports/{type}_ids_{date}.json.gz"
@@ -70,7 +69,7 @@ class TMDBClient:
 		except Exception as e:
 			raise ValueError(f"Failed to get export ids: {e}")
 	
-	@task(cache_policy=NO_CACHE)
+	@task
 	def get_changed_ids(self, type: str, start_date: date, end_date: date) -> set:
 		try:
 			ids: set = set()
