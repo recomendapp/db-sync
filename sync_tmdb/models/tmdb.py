@@ -32,8 +32,8 @@ class TMDBClient:
 	def _get_next_api_key(self) -> str:
 		return next(self.api_key_cycle)
 	
-	@task 
 	# @limit_concurrency(max_workers=20)
+	@task 
 	def request(self, endpoint: str, params: dict = {}) -> dict:
 		rate_limit("tmdb-api")
 		self.api_key = self._get_next_api_key()
