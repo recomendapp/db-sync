@@ -8,7 +8,7 @@ from ...utils.db import insert_into
 class SerieConfig(Config):
 	def __init__(self, date: date):
 		super().__init__(date=date)
-		self.flow_name: str = "movie"
+		self.flow_name: str = "serie"
 
 		# Data
 		self.db_languages: set = None
@@ -36,21 +36,11 @@ class SerieConfig(Config):
 		self.table_serie_spoken_languages: str = self.config.get("db_tables", {}).get("serie_spoken_languages", "tmdb_tv_series_spoken_languages")
 		self.table_serie_translations: str = self.config.get("db_tables", {}).get("serie_translations", "tmdb_tv_series_translations")
 		self.table_serie_videos: str = self.config.get("db_tables", {}).get("serie_videos", "tmdb_tv_series_videos")
-		# self.table_movie: str = self.config.get("db_tables", {}).get("movie", "tmdb_movie")
-		# self.table_movie_alternative_titles: str = self.config.get("db_tables", {}).get("movie_alternative_titles", "tmdb_movie_alternative_titles")
-		# self.table_movie_credits: str = self.config.get("db_tables", {}).get("movie_credits", "tmdb_movie_credits")
-		# self.table_movie_external_ids: str = self.config.get("db_tables", {}).get("movie_external_ids", "tmdb_movie_external_ids")
-		# self.table_movie_genres: str = self.config.get("db_tables", {}).get("movie_genres", "tmdb_movie_genres")
-		# self.table_movie_images: str = self.config.get("db_tables", {}).get("movie_images", "tmdb_movie_images")
-		# self.table_movie_keywords: str = self.config.get("db_tables", {}).get("movie_keywords", "tmdb_movie_keywords")
-		# self.table_movie_origin_country: str = self.config.get("db_tables", {}).get("movie_origin_country", "tmdb_movie_origin_country")
-		# self.table_movie_production_companies: str = self.config.get("db_tables", {}).get("movie_production_companies", "tmdb_movie_production_companies")
-		# self.table_movie_production_countries: str = self.config.get("db_tables", {}).get("movie_production_countries", "tmdb_movie_production_countries")
-		# self.table_movie_release_dates: str = self.config.get("db_tables", {}).get("movie_release_dates", "tmdb_movie_release_dates")
-		# self.table_movie_roles: str = self.config.get("db_tables", {}).get("movie_roles", "tmdb_movie_roles")
-		# self.table_movie_spoken_languages: str = self.config.get("db_tables", {}).get("movie_spoken_languages", "tmdb_movie_spoken_languages")
-		# self.table_movie_translations: str = self.config.get("db_tables", {}).get("movie_translations", "tmdb_movie_translations")
-		# self.table_movie_videos: str = self.config.get("db_tables", {}).get("movie_videos", "tmdb_movie_videos")
+		self.table_serie_credits: str = self.config.get("db_tables", {}).get("serie_credits", "tmdb_tv_series_credits")
+		
+		# Seasons
+		self.table_serie_season: str = self.config.get("db_tables", {}).get("serie_season", "tmdb_tv_series_seasons")
+
 
 		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
 		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb_country")
@@ -80,23 +70,8 @@ class SerieConfig(Config):
 		self.serie_spoken_languages_columns: list[str] = ["serie_id", "iso_639_1"]
 		self.serie_translations_columns: list[str] = ["serie_id", "name", "overview", "homepage", "tagline", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_columns: list[str] = ["id", "serie_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
+		self.serie_credits_columns: list[str] = ["id", "serie_id", "person_id", "department", "job", "character"]
 
-		# self.movie_columns: list[str] = ["id", "adult", "budget", "original_language", "original_title", "popularity", "revenue", "status", "vote_average", "vote_count", "belongs_to_collection", "updated_at"]
-		# self.movie_alternative_titles_columns: list[str] = ["movie_id", "iso_3166_1", "title", "type"]
-		# self.movie_credits_columns: list[str] = ["id", "movie_id", "person_id", "department", "job"]
-		# self.movie_external_ids_columns: list[str] = ["movie_id", "source", "value"]
-		# self.movie_genres_columns: list[str] = ["movie_id", "genre_id"]
-		# self.movie_images_columns: list[str] = ["movie_id", "file_path", "type", "aspect_ratio", "height", "width", "vote_average", "vote_count", "iso_639_1"]
-		# self.movie_keywords_columns: list[str] = ["movie_id", "keyword_id"]
-		# self.movie_origin_country_columns: list[str] = ["movie_id", "iso_3166_1"]
-		# self.movie_production_companies_columns: list[str] = ["movie_id", "company_id"]
-		# self.movie_production_countries_columns: list[str] = ["movie_id", "iso_3166_1"]
-		# self.movie_release_dates_columns: list[str] = ["movie_id", "iso_3166_1", "release_date", "certification", "iso_639_1", "note", "release_type", "descriptors"]
-		# self.movie_roles_columns: list[str] = ["credit_id", "character", '"order"']
-		# self.movie_spoken_languages_columns: list[str] = ["movie_id", "iso_639_1"]
-		# self.movie_translations_columns: list[str] = ["movie_id", "overview", "tagline", "title", "homepage", "runtime", "iso_639_1", "iso_3166_1"]
-		# self.movie_videos_columns: list[str] = ["id", "movie_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
-		
 		# On conflict
 		self.serie_on_conflict: list[str] = ["id"]
 		self.serie_alternative_titles_on_conflict: list[str] = ["serie_id", "iso_3166_1", "title", "type"]
@@ -113,22 +88,7 @@ class SerieConfig(Config):
 		self.serie_spoken_languages_on_conflict: list[str] = ["serie_id", "iso_639_1"]
 		self.serie_translations_on_conflict: list[str] = ["serie_id", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_on_conflict: list[str] = ["id"]
-
-		# self.movie_on_conflict: list[str] = ["id"]
-		# self.movie_alternative_titles_on_conflict: list[str] = ["movie_id", "iso_3166_1", "title", "type"]
-		# self.movie_credits_on_conflict: list[str] = ["id"]
-		# self.movie_external_ids_on_conflict: list[str] = ["movie_id", "source"]
-		# self.movie_genres_on_conflict: list[str] = ["movie_id", "genre_id"]
-		# self.movie_images_on_conflict: list[str] = ["movie_id", "file_path", "type"]
-		# self.movie_keywords_on_conflict: list[str] = ["movie_id", "keyword_id"]
-		# self.movie_origin_country_on_conflict: list[str] = ["movie_id", "iso_3166_1"]
-		# self.movie_production_companies_on_conflict: list[str] = ["movie_id", "company_id"]
-		# self.movie_production_countries_on_conflict: list[str] = ["movie_id", "iso_3166_1"]
-		# self.movie_release_dates_on_conflict: list[str] = ["movie_id", "iso_3166_1", "iso_639_1", "release_type"]
-		# self.movie_roles_on_conflict: list[str] = ["credit_id"]
-		# self.movie_spoken_languages_on_conflict: list[str] = ["movie_id", "iso_639_1"]
-		# self.movie_translations_on_conflict: list[str] = ["movie_id", "iso_639_1", "iso_3166_1"]
-		# self.movie_videos_on_conflict: list[str] = ["id"]
+		self.serie_credits_on_conflict: list[str] = ["credit_id"]
 
 		# On conflict update
 		self.serie_on_conflict_update: list[str] = [col for col in self.serie_columns if col not in self.serie_on_conflict]
@@ -146,23 +106,7 @@ class SerieConfig(Config):
 		self.serie_spoken_languages_on_conflict_update: list[str] = [col for col in self.serie_spoken_languages_columns if col not in self.serie_spoken_languages_on_conflict]
 		self.serie_translations_on_conflict_update: list[str] = [col for col in self.serie_translations_columns if col not in self.serie_translations_on_conflict]
 		self.serie_videos_on_conflict_update: list[str] = [col for col in self.serie_videos_columns if col not in self.serie_videos_on_conflict]
-		
-		# self.movie_on_conflict_update: list[str] = [col for col in self.movie_columns if col not in self.movie_on_conflict]
-		# self.movie_alternative_titles_on_conflict_update: list[str] = [col for col in self.movie_alternative_titles_columns if col not in self.movie_alternative_titles_on_conflict]
-		# self.movie_credits_on_conflict_update: list[str] = [col for col in self.movie_credits_columns if col not in self.movie_credits_on_conflict]
-		# self.movie_external_ids_on_conflict_update: list[str] = [col for col in self.movie_external_ids_columns if col not in self.movie_external_ids_on_conflict]
-		# self.movie_genres_on_conflict_update: list[str] = [col for col in self.movie_genres_columns if col not in self.movie_genres_on_conflict]
-		# self.movie_images_on_conflict_update: list[str] = [col for col in self.movie_images_columns if col not in self.movie_images_on_conflict]
-		# self.movie_keywords_on_conflict_update: list[str] = [col for col in self.movie_keywords_columns if col not in self.movie_keywords_on_conflict]
-		# self.movie_origin_country_on_conflict_update: list[str] = [col for col in self.movie_origin_country_columns if col not in self.movie_origin_country_on_conflict]
-		# self.movie_production_companies_on_conflict_update: list[str] = [col for col in self.movie_production_companies_columns if col not in self.movie_production_companies_on_conflict]
-		# self.movie_production_countries_on_conflict_update: list[str] = [col for col in self.movie_production_countries_columns if col not in self.movie_production_countries_on_conflict]
-		# self.movie_release_dates_on_conflict_update: list[str] = [col for col in self.movie_release_dates_columns if col not in self.movie_release_dates_on_conflict]
-		# self.movie_roles_on_conflict_update: list[str] = [col for col in self.movie_roles_columns if col not in self.movie_roles_on_conflict]
-		# self.movie_spoken_languages_on_conflict_update: list[str] = [col for col in self.movie_spoken_languages_columns if col not in self.movie_spoken_languages_on_conflict]
-		# self.movie_translations_on_conflict_update: list[str] = [col for col in self.movie_translations_columns if col not in self.movie_translations_on_conflict]
-		# self.movie_videos_on_conflict_update: list[str] = [col for col in self.movie_videos_columns if col not in self.movie_videos_on_conflict]
-
+		self.serie_credits_on_conflict_update: list[str] = [col for col in self.serie_credits_columns if col not in self.serie_credits_on_conflict]
 	@task
 	def get_db_data(self):
 		"""Get the data from the database"""

@@ -52,21 +52,29 @@ def get_tmdb_series_changed(config: SerieConfig):
 		raise ValueError(f"Failed to get changed series: {e}")
 
 @task
-def get_tmdb_movie_details(config: SerieConfig, movie_id: int) -> dict:
+def get_tmdb_serie_details(config: SerieConfig, serie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"
 		# TMDB limit the number of languages to 5 
-		movie = config.tmdb_client.request(f"movie/{movie_id}", {"append_to_response": "alternative_titles,credits,external_ids,keywords,release_dates,translations,videos", "include_video_language": main_video_languages})
+		serie = config.tmdb_client.request(f"tv/{serie_id}", {"append_to_response": "alternative_titles,content_ratings,external_ids,images,keywords,videos,aggregate_credits,translations", "include_video_language": main_video_languages})
 
 		# Protect against adult content
-		if movie["adult"]:
+		if serie["adult"]:
 			return None
-		images = config.tmdb_client.request(f"movie/{movie_id}/images")
-		# Add images to the movie details
-		movie["images"] = images
-		return movie
+		
+		# Get the each season details
+		seasons = []
+		for season in serie["seasons"]:
+			try:
+				season_details = config.tmdb_client.request(f"tv/{serie_id}/season/{season['season_number']}")
+				seasons.append(season_details)
+			except Exception as e:
+				config.logger.error(f"Failed to get season details for {serie_id} season {season['season_number']}: {e}")
+
+		serie["seasons"] = seasons
+		return serie
 	except Exception as e:
-		config.logger.error(f"Failed to get movie details for {movie_id}: {e}")
+		config.logger.error(f"Failed to get serie details for {serie_id}: {e}")
 		return None
 
 # ---------------------------------------------------------------------------- #
@@ -244,11 +252,34 @@ def process_missing_series(config: SerieConfig):
 					prefix=f"{config.flow_name}_videos"
 				)
 
-				series_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
+				csv["serie_credits"] = CSVFile(
+					columns=config.serie_credits_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_credits"
+				)
+
+
+				series_details_futures = get_tmdb_serie_details.map(config=config, serie_id=chunk)
 				for serie_details_response in series_details_futures:
 					serie_details = serie_details_response.result()
 					if serie_details is not None:
-						print(serie_details)
+						csv["serie"].append(rows_data=Mapper.serie(config=config,serie=serie_details))
+						csv["serie_alternative_titles"].append(rows_data=Mapper.serie_alternative_titles(config=config,serie=serie_details))
+						csv["serie_content_ratings"].append(rows_data=Mapper.serie_content_ratings(config=config,serie=serie_details))
+						csv["serie_external_ids"].append(rows_data=Mapper.serie_external_ids(config=config,serie=serie_details))
+						csv["serie_genres"].append(rows_data=Mapper.serie_genres(config=config,serie=serie_details))
+						csv["serie_images"].append(rows_data=Mapper.serie_images(config=config,serie=serie_details))
+						csv["serie_keywords"].append(rows_data=Mapper.serie_keywords(config=config,serie=serie_details))
+						csv["serie_languages"].append(rows_data=Mapper.serie_languages(config=config,serie=serie_details))
+						csv["serie_networks"].append(rows_data=Mapper.serie_networks(config=config,serie=serie_details))
+						csv["serie_origin_country"].append(rows_data=Mapper.serie_origin_country(config=config,serie=serie_details))
+						csv["serie_production_companies"].append(rows_data=Mapper.serie_production_companies(config=config,serie=serie_details))
+						csv["serie_production_countries"].append(rows_data=Mapper.serie_production_countries(config=config,serie=serie_details))
+						csv["serie_spoken_languages"].append(rows_data=Mapper.serie_spoken_languages(config=config,serie=serie_details))
+						csv["serie_translations"].append(rows_data=Mapper.serie_translations(config=config,serie=serie_details))
+						csv["serie_videos"].append(rows_data=Mapper.serie_videos(config=config,serie=serie_details))
+						csv["serie_credits"].append(rows_data=Mapper.serie_credits(config=config,serie=serie_details))
+
 						# csv["movie"].append(rows_data=Mapper.movie(config=config,movie=movie_details))
 						# csv["movie_alternative_titles"].append(rows_data=Mapper.movie_alternative_titles(config=config,movie=movie_details))
 						# movie_credits_df, movie_roles_df = Mapper.movie_credits(config=config,movie=movie_details)
@@ -266,10 +297,10 @@ def process_missing_series(config: SerieConfig):
 						# csv["movie_translations"].append(rows_data=Mapper.movie_translations(config=config,movie=movie_details))
 						# csv["movie_videos"].append(rows_data=Mapper.movie_videos(config=config,movie=movie_details))
 
-				config.logger.info(f"Pushing series to the database...")
-				push_future = config.push.submit(csv=csv)
-				push_future.result(raise_on_failure=True)
-				config.logger.info(f"Successfully pushed series to the database")
+				# config.logger.info(f"Pushing series to the database...")
+				# push_future = config.push.submit(csv=csv)
+				# push_future.result(raise_on_failure=True)
+				# config.logger.info(f"Successfully pushed series to the database")
 			
 			# Wait for all the submits to finish
 			# wait(submits)
@@ -284,25 +315,27 @@ def sync_tmdb_serie(date: date = date.today()):
 	logger.info(f"Syncing serie for {date}...")
 	try:
 		config = SerieConfig(date=date)
-		config.log_manager.init(type="tmdb_serie")
+		# config.log_manager.init(type="tmdb_serie")
 
 		# Get the list of series from TMDB and the database
-		config.log_manager.fetching_data()
-		tmdb_series_set = get_tmdb_series(config)
-		db_series_set = get_db_series(config)
+		# config.log_manager.fetching_data()
+		# tmdb_series_set = get_tmdb_series(config)
+		# db_series_set = get_db_series(config)
+		tmdb_series_set = {1, 2, 93405}
+		db_series_set = {1, 2}
 
 		# Compare the series and process missing serries
 		config.extra_series = db_series_set - tmdb_series_set
 		config.missing_series = tmdb_series_set - db_series_set
-		get_tmdb_series_changed(config)
+		# get_tmdb_series_changed(config)
 		logger.info(f"Found {len(config.extra_series)} extra series and {len(config.missing_series)} missing series")
-		config.log_manager.data_fetched()
+		# config.log_manager.data_fetched()
 
 		# Sync the series to the database
-		config.log_manager.syncing_to_db()
+		# config.log_manager.syncing_to_db()
 		config.prune()
 		process_missing_series(config=config)
-		config.log_manager.success()
+		# config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()
 		raise ValueError(f"Failed to sync series: {e}")
