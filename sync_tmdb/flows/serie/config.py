@@ -18,6 +18,9 @@ class SerieConfig(Config):
 		self.db_collections: set = None
 		self.db_companies: set = None
 		self.db_persons: set = None
+		self.db_networks: set = None
+
+		self.tmp_credit_ids: set = set()
 
 
 		# Tables
@@ -40,8 +43,14 @@ class SerieConfig(Config):
 		
 		# Seasons
 		self.table_serie_season: str = self.config.get("db_tables", {}).get("serie_season", "tmdb_tv_series_seasons")
+		self.table_serie_season_credits: str = self.config.get("db_tables", {}).get("serie_season_credits", "tmdb_tv_series_seasons_credits")
+		self.table_serie_season_translations: str = self.config.get("db_tables", {}).get("serie_season_translations", "tmdb_tv_series_seasons_translations")
+		
+		# Episodes
+		self.table_serie_episode: str = self.config.get("db_tables", {}).get("serie_episode", "tmdb_tv_series_episodes")
+		self.table_serie_episode_credits: str = self.config.get("db_tables", {}).get("serie_episode_credits", "tmdb_tv_series_episodes_credits")
 
-
+		# Others
 		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
 		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb_country")
 		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb_genre")
@@ -70,7 +79,16 @@ class SerieConfig(Config):
 		self.serie_spoken_languages_columns: list[str] = ["serie_id", "iso_639_1"]
 		self.serie_translations_columns: list[str] = ["serie_id", "name", "overview", "homepage", "tagline", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_columns: list[str] = ["id", "serie_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
-		self.serie_credits_columns: list[str] = ["id", "serie_id", "person_id", "department", "job", "character"]
+		self.serie_credits_columns: list[str] = ["id", "serie_id", "person_id", "department", "job", "character", "episode_count"]
+
+		# Seasons
+		self.serie_season_columns: list[str] = ["id", "serie_id", "season_number", "vote_average", "vote_count", "poster_path"]
+		self.serie_season_credits_columns: list[str] = ["credit_id", "season_id", '"order"']
+		self.serie_season_translations_columns: list[str] = ["season_id", "name", "overview", "iso_639_1", "iso_3166_1"]
+
+		# Episodes
+		self.serie_episode_columns: list[str] = ["id", "season_id", "air_date", "episode_number", "episode_type", "name", "overview", "production_code", "runtime", "still_path", "vote_average", "vote_count"]
+		self.serie_episode_credits_columns: list[str] = ["credit_id", "episode_id"]
 
 		# On conflict
 		self.serie_on_conflict: list[str] = ["id"]
@@ -88,7 +106,16 @@ class SerieConfig(Config):
 		self.serie_spoken_languages_on_conflict: list[str] = ["serie_id", "iso_639_1"]
 		self.serie_translations_on_conflict: list[str] = ["serie_id", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_on_conflict: list[str] = ["id"]
-		self.serie_credits_on_conflict: list[str] = ["credit_id"]
+		self.serie_credits_on_conflict: list[str] = ["id"]
+
+		# Seasons
+		self.serie_season_on_conflict: list[str] = ["id"]
+		self.serie_season_credits_on_conflict: list[str] = ["credit_id", "season_id"]
+		self.serie_season_translations_on_conflict: list[str] = ["season_id", "iso_639_1", "iso_3166_1"]
+
+		# Episodes
+		self.serie_episode_on_conflict: list[str] = ["id"]
+		self.serie_episode_credits_on_conflict: list[str] = ["credit_id", "episode_id"]
 
 		# On conflict update
 		self.serie_on_conflict_update: list[str] = [col for col in self.serie_columns if col not in self.serie_on_conflict]
@@ -107,6 +134,16 @@ class SerieConfig(Config):
 		self.serie_translations_on_conflict_update: list[str] = [col for col in self.serie_translations_columns if col not in self.serie_translations_on_conflict]
 		self.serie_videos_on_conflict_update: list[str] = [col for col in self.serie_videos_columns if col not in self.serie_videos_on_conflict]
 		self.serie_credits_on_conflict_update: list[str] = [col for col in self.serie_credits_columns if col not in self.serie_credits_on_conflict]
+
+		# Seasons
+		self.serie_season_on_conflict_update: list[str] = [col for col in self.serie_season_columns if col not in self.serie_season_on_conflict]
+		self.serie_season_credits_on_conflict_update: list[str] = [col for col in self.serie_season_credits_columns if col not in self.serie_season_credits_on_conflict]
+		self.serie_season_translations_on_conflict_update: list[str] = [col for col in self.serie_season_translations_columns if col not in self.serie_season_translations_on_conflict]
+
+		# Episodes
+		self.serie_episode_on_conflict_update: list[str] = [col for col in self.serie_episode_columns if col not in self.serie_episode_on_conflict]
+		self.serie_episode_credits_on_conflict_update: list[str] = [col for col in self.serie_episode_credits_columns if col not in self.serie_episode_credits_on_conflict]
+	
 	@task
 	def get_db_data(self):
 		"""Get the data from the database"""
@@ -153,350 +190,500 @@ class SerieConfig(Config):
 		self.logger.info(f"Connections: {self.db_client.nb_open_connections} open, {self.db_client.nb_close_connections} close")
 		try:
 			# Clean duplicates from the CSV files
-			# csv["movie"].clean_duplicates(conflict_columns=self.movie_on_conflict)
-			# csv["movie_alternative_titles"].clean_duplicates(conflict_columns=self.movie_alternative_titles_on_conflict)
-			# csv["movie_credits"].clean_duplicates(conflict_columns=self.movie_credits_on_conflict)
-			# csv["movie_external_ids"].clean_duplicates(conflict_columns=self.movie_external_ids_on_conflict)
-			# csv["movie_genres"].clean_duplicates(conflict_columns=self.movie_genres_on_conflict)
-			# csv["movie_images"].clean_duplicates(conflict_columns=self.movie_images_on_conflict)
-			# csv["movie_keywords"].clean_duplicates(conflict_columns=self.movie_keywords_on_conflict)
-			# csv["movie_origin_country"].clean_duplicates(conflict_columns=self.movie_origin_country_on_conflict)
-			# csv["movie_production_companies"].clean_duplicates(conflict_columns=self.movie_production_companies_on_conflict)
-			# csv["movie_production_countries"].clean_duplicates(conflict_columns=self.movie_production_countries_on_conflict)
-			# csv["movie_release_dates"].clean_duplicates(conflict_columns=self.movie_release_dates_on_conflict)
-			# csv["movie_roles"].clean_duplicates(conflict_columns=self.movie_roles_on_conflict)
-			# csv["movie_spoken_languages"].clean_duplicates(conflict_columns=self.movie_spoken_languages_on_conflict)
-			# csv["movie_translations"].clean_duplicates(conflict_columns=self.movie_translations_on_conflict)
-			# csv["movie_videos"].clean_duplicates(conflict_columns=self.movie_videos_on_conflict)
+			csv["serie"].clean_duplicates(conflict_columns=self.serie_on_conflict)
+			csv["serie_alternative_titles"].clean_duplicates(conflict_columns=self.serie_alternative_titles_on_conflict)
+			csv["serie_content_ratings"].clean_duplicates(conflict_columns=self.serie_content_ratings_on_conflict)
+			csv["serie_external_ids"].clean_duplicates(conflict_columns=self.serie_external_ids_on_conflict)
+			csv["serie_genres"].clean_duplicates(conflict_columns=self.serie_genres_on_conflict)
+			csv["serie_images"].clean_duplicates(conflict_columns=self.serie_images_on_conflict)
+			csv["serie_keywords"].clean_duplicates(conflict_columns=self.serie_keywords_on_conflict)
+			csv["serie_languages"].clean_duplicates(conflict_columns=self.serie_languages_on_conflict)
+			csv["serie_networks"].clean_duplicates(conflict_columns=self.serie_networks_on_conflict)
+			csv["serie_origin_country"].clean_duplicates(conflict_columns=self.serie_origin_country_on_conflict)
+			csv["serie_production_companies"].clean_duplicates(conflict_columns=self.serie_production_companies_on_conflict)
+			csv["serie_production_countries"].clean_duplicates(conflict_columns=self.serie_production_countries_on_conflict)
+			csv["serie_spoken_languages"].clean_duplicates(conflict_columns=self.serie_spoken_languages_on_conflict)
+			csv["serie_translations"].clean_duplicates(conflict_columns=self.serie_translations_on_conflict)
+			csv["serie_videos"].clean_duplicates(conflict_columns=self.serie_videos_on_conflict)
+			csv["serie_credits"].clean_duplicates(conflict_columns=self.serie_credits_on_conflict)
+			csv["serie_season"].clean_duplicates(conflict_columns=self.serie_season_on_conflict)
+			csv["serie_season_credits"].clean_duplicates(conflict_columns=self.serie_season_credits_on_conflict)
+			csv["serie_season_translations"].clean_duplicates(conflict_columns=self.serie_season_translations_on_conflict)
+			csv["serie_episode"].clean_duplicates(conflict_columns=self.serie_episode_on_conflict)
+			csv["serie_episode_credits"].clean_duplicates(conflict_columns=self.serie_episode_credits_on_conflict)
 
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
 
-					# temp_movie = f"temp_{self.table_movie}_{uuid.uuid4().hex}"
-					# temp_movie_alternative_titles = f"temp_{self.table_movie_alternative_titles}_{uuid.uuid4().hex}"
-					# temp_movie_credits = f"temp_{self.table_movie_credits}_{uuid.uuid4().hex}"
-					# temp_movie_external_ids = f"temp_{self.table_movie_external_ids}_{uuid.uuid4().hex}"
-					# temp_movie_genres = f"temp_{self.table_movie_genres}_{uuid.uuid4().hex}"
-					# temp_movie_images = f"temp_{self.table_movie_images}_{uuid.uuid4().hex}"
-					# temp_movie_keywords = f"temp_{self.table_movie_keywords}_{uuid.uuid4().hex}"
-					# temp_movie_origin_country = f"temp_{self.table_movie_origin_country}_{uuid.uuid4().hex}"
-					# temp_movie_production_companies = f"temp_{self.table_movie_production_companies}_{uuid.uuid4().hex}"
-					# temp_movie_production_countries = f"temp_{self.table_movie_production_countries}_{uuid.uuid4().hex}"
-					# temp_movie_release_dates = f"temp_{self.table_movie_release_dates}_{uuid.uuid4().hex}"
-					# temp_movie_roles = f"temp_{self.table_movie_roles}_{uuid.uuid4().hex}"
-					# temp_movie_spoken_languages = f"temp_{self.table_movie_spoken_languages}_{uuid.uuid4().hex}"
-					# temp_movie_translations = f"temp_{self.table_movie_translations}_{uuid.uuid4().hex}"
-					# temp_movie_videos = f"temp_{self.table_movie_videos}_{uuid.uuid4().hex}"
+					temp_serie = f"temp_{self.table_serie}_{uuid.uuid4().hex}"
+					temp_serie_alternative_titles = f"temp_{self.table_serie_alternative_titles}_{uuid.uuid4().hex}"
+					temp_serie_content_ratings = f"temp_{self.table_serie_content_ratings}_{uuid.uuid4().hex}"
+					temp_serie_external_ids = f"temp_{self.table_serie_external_ids}_{uuid.uuid4().hex}"
+					temp_serie_genres = f"temp_{self.table_serie_genres}_{uuid.uuid4().hex}"
+					temp_serie_images = f"temp_{self.table_serie_images}_{uuid.uuid4().hex}"
+					temp_serie_keywords = f"temp_{self.table_serie_keywords}_{uuid.uuid4().hex}"
+					temp_serie_languages = f"temp_{self.table_serie_languages}_{uuid.uuid4().hex}"
+					temp_serie_networks = f"temp_{self.table_serie_networks}_{uuid.uuid4().hex}"
+					temp_serie_origin_country = f"temp_{self.table_serie_origin_country}_{uuid.uuid4().hex}"
+					temp_serie_production_companies = f"temp_{self.table_serie_production_companies}_{uuid.uuid4().hex}"
+					temp_serie_production_countries = f"temp_{self.table_serie_production_countries}_{uuid.uuid4().hex}"
+					temp_serie_spoken_languages = f"temp_{self.table_serie_spoken_languages}_{uuid.uuid4().hex}"
+					temp_serie_translations = f"temp_{self.table_serie_translations}_{uuid.uuid4().hex}"
+					temp_serie_videos = f"temp_{self.table_serie_videos}_{uuid.uuid4().hex}"
+					temp_serie_credits = f"temp_{self.table_serie_credits}_{uuid.uuid4().hex}"
+					temp_serie_season = f"temp_{self.table_serie_season}_{uuid.uuid4().hex}"
+					temp_serie_season_credits = f"temp_{self.table_serie_season_credits}_{uuid.uuid4().hex}"
+					temp_serie_season_translations = f"temp_{self.table_serie_season_translations}_{uuid.uuid4().hex}"
+					temp_serie_episode = f"temp_{self.table_serie_episode}_{uuid.uuid4().hex}"
+					temp_serie_episode_credits = f"temp_{self.table_serie_episode_credits}_{uuid.uuid4().hex}"
 
-					# cursor.execute(f"""
-					# 	CREATE TEMP TABLE {temp_movie} (LIKE {self.table_movie} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_alternative_titles} (LIKE {self.table_movie_alternative_titles} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_credits} (LIKE {self.table_movie_credits} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_external_ids} (LIKE {self.table_movie_external_ids} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_genres} (LIKE {self.table_movie_genres} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_images} (LIKE {self.table_movie_images} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_keywords} (LIKE {self.table_movie_keywords} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_origin_country} (LIKE {self.table_movie_origin_country} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_production_companies} (LIKE {self.table_movie_production_companies} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_production_countries} (LIKE {self.table_movie_production_countries} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_release_dates} (LIKE {self.table_movie_release_dates} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_roles} (LIKE {self.table_movie_roles} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_spoken_languages} (LIKE {self.table_movie_spoken_languages} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_translations} (LIKE {self.table_movie_translations} INCLUDING ALL);
-					# 	CREATE TEMP TABLE {temp_movie_videos} (LIKE {self.table_movie_videos} INCLUDING ALL);
-					# """)
+					cursor.execute(f"""
+						CREATE TEMP TABLE {temp_serie} (LIKE {self.table_serie} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_alternative_titles} (LIKE {self.table_serie_alternative_titles} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_content_ratings} (LIKE {self.table_serie_content_ratings} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_external_ids} (LIKE {self.table_serie_external_ids} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_genres} (LIKE {self.table_serie_genres} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_images} (LIKE {self.table_serie_images} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_keywords} (LIKE {self.table_serie_keywords} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_languages} (LIKE {self.table_serie_languages} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_networks} (LIKE {self.table_serie_networks} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_origin_country} (LIKE {self.table_serie_origin_country} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_production_companies} (LIKE {self.table_serie_production_companies} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_production_countries} (LIKE {self.table_serie_production_countries} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_spoken_languages} (LIKE {self.table_serie_spoken_languages} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_translations} (LIKE {self.table_serie_translations} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_videos} (LIKE {self.table_serie_videos} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_credits} (LIKE {self.table_serie_credits} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_season} (LIKE {self.table_serie_season} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_season_credits} (LIKE {self.table_serie_season_credits} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_season_translations} (LIKE {self.table_serie_season_translations} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_episode} (LIKE {self.table_serie_episode} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_episode_credits} (LIKE {self.table_serie_episode_credits} INCLUDING ALL);
+					""")
 
-					# with open(csv["movie"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie} ({','.join(self.movie_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_alternative_titles"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_alternative_titles} ({','.join(self.movie_alternative_titles_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_credits"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_credits} ({','.join(self.movie_credits_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_external_ids"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_external_ids} ({','.join(self.movie_external_ids_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_genres"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_genres} ({','.join(self.movie_genres_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_images"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_images} ({','.join(self.movie_images_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_keywords"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_keywords} ({','.join(self.movie_keywords_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_origin_country"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_origin_country} ({','.join(self.movie_origin_country_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_production_companies"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_production_companies} ({','.join(self.movie_production_companies_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_production_countries"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_production_countries} ({','.join(self.movie_production_countries_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_release_dates"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_release_dates} ({','.join(self.movie_release_dates_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_roles"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_roles} ({','.join(self.movie_roles_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_spoken_languages"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_spoken_languages} ({','.join(self.movie_spoken_languages_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_translations"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_translations} ({','.join(self.movie_translations_columns)}) FROM STDIN WITH CSV HEADER", f)
-					# with open(csv["movie_videos"].file_path, "r") as f:
-					# 	cursor.copy_expert(f"COPY {temp_movie_videos} ({','.join(self.movie_videos_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie} ({','.join(self.serie_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_alternative_titles"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_alternative_titles} ({','.join(self.serie_alternative_titles_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_content_ratings"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_content_ratings} ({','.join(self.serie_content_ratings_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_external_ids"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_external_ids} ({','.join(self.serie_external_ids_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_genres"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_genres} ({','.join(self.serie_genres_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_images"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_images} ({','.join(self.serie_images_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_keywords"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_keywords} ({','.join(self.serie_keywords_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_languages"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_languages} ({','.join(self.serie_languages_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_networks"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_networks} ({','.join(self.serie_networks_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_origin_country"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_origin_country} ({','.join(self.serie_origin_country_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_production_companies"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_production_companies} ({','.join(self.serie_production_companies_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_production_countries"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_production_countries} ({','.join(self.serie_production_countries_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_spoken_languages"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_spoken_languages} ({','.join(self.serie_spoken_languages_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_translations"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_translations} ({','.join(self.serie_translations_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_videos"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_videos} ({','.join(self.serie_videos_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_credits"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_credits} ({','.join(self.serie_credits_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_season"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_season} ({','.join(self.serie_season_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_season_credits"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_season_credits} ({','.join(self.serie_season_credits_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_season_translations"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_season_translations} ({','.join(self.serie_season_translations_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_episode"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_episode} ({','.join(self.serie_episode_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_episode_credits"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_episode_credits} ({','.join(self.serie_episode_credits_columns)}) FROM STDIN WITH CSV HEADER", f)
 
-					# # Delete all outdated alternative titles before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_alternative_titles}
-					# 	WHERE {self.movie_alternative_titles_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated alternative titles before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_alternative_titles}
+						WHERE {self.serie_alternative_titles_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated credits before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_credits}
-					# 	WHERE {self.movie_credits_columns[1]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
-					# # No need to delete roles because is one-to-one relationship with credits
+					# Delete all outdated content ratings before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_content_ratings}
+						WHERE {self.serie_content_ratings_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated external ids before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_external_ids}
-					# 	WHERE {self.movie_external_ids_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated external ids before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_external_ids}
+						WHERE {self.serie_external_ids_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated genres before inserting
-					# cursor.execute(f"""	
-					# 	DELETE FROM {self.table_movie_genres}
-					# 	WHERE {self.movie_genres_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated genres before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_genres}
+						WHERE {self.serie_genres_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated images before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_images}
-					# 	WHERE {self.movie_images_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated images before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_images}
+						WHERE {self.serie_images_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated keywords before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_keywords}
-					# 	WHERE {self.movie_keywords_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated keywords before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_keywords}
+						WHERE {self.serie_keywords_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated origin countries before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_origin_country}
-					# 	WHERE {self.movie_origin_country_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated languages before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_languages}
+						WHERE {self.serie_languages_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated production companies before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_production_companies}
-					# 	WHERE {self.movie_production_companies_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated networks before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_networks}
+						WHERE {self.serie_networks_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated production countries before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_production_countries}
-					# 	WHERE {self.movie_production_countries_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated origin countries before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_origin_country}
+						WHERE {self.serie_origin_country_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
+					
+					# Delete all outdated production companies before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_production_companies}
+						WHERE {self.serie_production_companies_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated release dates before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_release_dates}
-					# 	WHERE {self.movie_release_dates_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated production countries before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_production_countries}
+						WHERE {self.serie_production_countries_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated spoken languages before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_spoken_languages}
-					# 	WHERE {self.movie_spoken_languages_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated spoken languages before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_spoken_languages}
+						WHERE {self.serie_spoken_languages_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated translations before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_translations}
-					# 	WHERE {self.movie_translations_columns[0]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated translations before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_translations}
+						WHERE {self.serie_translations_columns[0]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Delete all outdated videos before inserting
-					# cursor.execute(f"""
-					# 	DELETE FROM {self.table_movie_videos}
-					# 	WHERE {self.movie_videos_columns[1]} IN (
-					# 		SELECT id FROM {temp_movie}
-					# 	);
-					# """)
+					# Delete all outdated videos before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_videos}
+						WHERE {self.serie_videos_columns[1]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie,
-					# 	temp_table=temp_movie,
-					# 	columns=self.movie_columns,
-					# 	on_conflict=self.movie_on_conflict,
-					# 	on_conflict_update=self.movie_on_conflict_update
-					# )
+					# Delete all outdated credits before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_credits}
+						WHERE {self.serie_credits_columns[1]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# # Here we disable the on conflict to do nothing
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_alternative_titles,
-					# 	temp_table=temp_movie_alternative_titles,
-					# 	columns=self.movie_alternative_titles_columns,
-					# 	# on_conflict=[],
-					# 	# on_conflict_update=[]
-					# )
+					# Delete all outdated seasons before inserting
+					# Careful, we dont have to delete all because user can have activity with seasons so we have to delete only the ones not in the new data BUT only series that are in the new data
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season}
+						WHERE {self.serie_season_columns[0]} NOT IN (
+							SELECT id FROM {temp_serie_season}
+						) AND {self.serie_season_columns[1]} IN (
+							SELECT id FROM {temp_serie}
+						);
+					""")
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_credits,
-					# 	temp_table=temp_movie_credits,
-					# 	columns=self.movie_credits_columns,
-					# 	# on_conflict=self.movie_credits_on_conflict,
-					# 	# on_conflict_update=self.movie_credits_on_conflict_update
-					# )
+					# Delete all outdated season credits before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season_credits}
+						WHERE {self.serie_season_credits_columns[1]} IN (
+							SELECT id FROM {temp_serie_season}
+						);
+					""")
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_external_ids,
-					# 	temp_table=temp_movie_external_ids,
-					# 	columns=self.movie_external_ids_columns,
-					# 	# on_conflict=self.movie_external_ids_on_conflict,
-					# 	# on_conflict_update=self.movie_external_ids_on_conflict_update
-					# )
+					# Delete all outdated season translations before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season_translations}
+						WHERE {self.serie_season_translations_columns[0]} IN (
+							SELECT id FROM {temp_serie_season}
+						);
+					""")
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_genres,
-					# 	temp_table=temp_movie_genres,
-					# 	columns=self.movie_genres_columns,
-					# 	# on_conflict=self.movie_genres_on_conflict,
-					# 	# on_conflict_update=self.movie_genres_on_conflict_update
-					# )
+					# Delete all outdated episodes before inserting
+					# Careful, we dont have to delete all because user can have activity with episodes so we have to delete only the ones not in the new data BUT only series that are in the new data
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_episode}
+						WHERE {self.serie_episode_columns[0]} NOT IN (
+							SELECT id FROM {temp_serie_episode}
+						) AND {self.serie_episode_columns[1]} IN (
+							SELECT id FROM {temp_serie_season}
+						);
+					""")
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_images,
-					# 	temp_table=temp_movie_images,
-					# 	columns=self.movie_images_columns,
-					# 	# on_conflict=self.movie_images_on_conflict,
-					# 	# on_conflict_update=self.movie_images_on_conflict_update
-					# )
+					# Delete all outdated episode credits before inserting
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_episode_credits}
+						WHERE {self.serie_episode_credits_columns[1]} IN (
+							SELECT id FROM {temp_serie_episode}
+						);
+					""")
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_keywords,
-					# 	temp_table=temp_movie_keywords,
-					# 	columns=self.movie_keywords_columns,
-					# 	# on_conflict=self.movie_keywords_on_conflict,
-					# 	# on_conflict_update=self.movie_keywords_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie,
+						temp_table=temp_serie,
+						columns=self.serie_columns,
+						on_conflict=self.serie_on_conflict,
+						on_conflict_update=self.serie_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_origin_country,
-					# 	temp_table=temp_movie_origin_country,
-					# 	columns=self.movie_origin_country_columns,
-					# 	# on_conflict=self.movie_origin_country_on_conflict,
-					# 	# on_conflict_update=self.movie_origin_country_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_alternative_titles,
+						temp_table=temp_serie_alternative_titles,
+						columns=self.serie_alternative_titles_columns,
+						# on_conflict=self.serie_alternative_titles_on_conflict,
+						# on_conflict_update=self.serie_alternative_titles_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_production_companies,
-					# 	temp_table=temp_movie_production_companies,
-					# 	columns=self.movie_production_companies_columns,
-					# 	# on_conflict=self.movie_production_companies_on_conflict,
-					# 	# on_conflict_update=self.movie_production_companies_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_content_ratings,
+						temp_table=temp_serie_content_ratings,
+						columns=self.serie_content_ratings_columns,
+						# on_conflict=self.serie_content_ratings_on_conflict,
+						# on_conflict_update=self.serie_content_ratings_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_production_countries,
-					# 	temp_table=temp_movie_production_countries,
-					# 	columns=self.movie_production_countries_columns,
-					# 	# on_conflict=self.movie_production_countries_on_conflict,
-					# 	# on_conflict_update=self.movie_production_countries_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_external_ids,
+						temp_table=temp_serie_external_ids,
+						columns=self.serie_external_ids_columns,
+						# on_conflict=self.serie_external_ids_on_conflict,
+						# on_conflict_update=self.serie_external_ids_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_release_dates,
-					# 	temp_table=temp_movie_release_dates,
-					# 	columns=self.movie_release_dates_columns,
-					# 	# on_conflict=self.movie_release_dates_on_conflict,
-					# 	# on_conflict_update=self.movie_release_dates_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_genres,
+						temp_table=temp_serie_genres,
+						columns=self.serie_genres_columns,
+						# on_conflict=self.serie_genres_on_conflict,
+						# on_conflict_update=self.serie_genres_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_roles,
-					# 	temp_table=temp_movie_roles,
-					# 	columns=self.movie_roles_columns,
-					# 	# on_conflict=self.movie_roles_on_conflict,
-					# 	# on_conflict_update=self.movie_roles_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_images,
+						temp_table=temp_serie_images,
+						columns=self.serie_images_columns,
+						# on_conflict=self.serie_images_on_conflict,
+						# on_conflict_update=self.serie_images_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_spoken_languages,
-					# 	temp_table=temp_movie_spoken_languages,
-					# 	columns=self.movie_spoken_languages_columns,
-					# 	# on_conflict=self.movie_spoken_languages_on_conflict,
-					# 	# on_conflict_update=self.movie_spoken_languages_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_keywords,
+						temp_table=temp_serie_keywords,
+						columns=self.serie_keywords_columns,
+						# on_conflict=self.serie_keywords_on_conflict,
+						# on_conflict_update=self.serie_keywords_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_translations,
-					# 	temp_table=temp_movie_translations,
-					# 	columns=self.movie_translations_columns,
-					# 	# on_conflict=self.movie_translations_on_conflict,
-					# 	# on_conflict_update=self.movie_translations_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_languages,
+						temp_table=temp_serie_languages,
+						columns=self.serie_languages_columns,
+						# on_conflict=self.serie_languages_on_conflict,
+						# on_conflict_update=self.serie_languages_on_conflict_update
+					)
 
-					# insert_into(
-					# 	cursor=cursor,
-					# 	table=self.table_movie_videos,
-					# 	temp_table=temp_movie_videos,
-					# 	columns=self.movie_videos_columns,
-					# 	# on_conflict=self.movie_videos_on_conflict,
-					# 	# on_conflict_update=self.movie_videos_on_conflict_update
-					# )
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_networks,
+						temp_table=temp_serie_networks,
+						columns=self.serie_networks_columns,
+						# on_conflict=self.serie_networks_on_conflict,
+						# on_conflict_update=self.serie_networks_on_conflict_update
+					)
 
-					# conn.commit()
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_origin_country,
+						temp_table=temp_serie_origin_country,
+						columns=self.serie_origin_country_columns,
+						# on_conflict=self.serie_origin_country_on_conflict,
+						# on_conflict_update=self.serie_origin_country_on_conflict_update
+					)
 
-					# # Delete the CSV files
-					# csv["movie"].delete()
-					# csv["movie_alternative_titles"].delete()
-					# csv["movie_credits"].delete()
-					# csv["movie_external_ids"].delete()
-					# csv["movie_genres"].delete()
-					# csv["movie_images"].delete()
-					# csv["movie_keywords"].delete()
-					# csv["movie_origin_country"].delete()
-					# csv["movie_production_companies"].delete()
-					# csv["movie_production_countries"].delete()
-					# csv["movie_release_dates"].delete()
-					# csv["movie_roles"].delete()
-					# csv["movie_spoken_languages"].delete()
-					# csv["movie_translations"].delete()
-					# csv["movie_videos"].delete()
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_production_companies,
+						temp_table=temp_serie_production_companies,
+						columns=self.serie_production_companies_columns,
+						# on_conflict=self.serie_production_companies_on_conflict,
+						# on_conflict_update=self.serie_production_companies_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_production_countries,
+						temp_table=temp_serie_production_countries,
+						columns=self.serie_production_countries_columns,
+						# on_conflict=self.serie_production_countries_on_conflict,
+						# on_conflict_update=self.serie_production_countries_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_spoken_languages,
+						temp_table=temp_serie_spoken_languages,
+						columns=self.serie_spoken_languages_columns,
+						# on_conflict=self.serie_spoken_languages_on_conflict,
+						# on_conflict_update=self.serie_spoken_languages_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_translations,
+						temp_table=temp_serie_translations,
+						columns=self.serie_translations_columns,
+						# on_conflict=self.serie_translations_on_conflict,
+						# on_conflict_update=self.serie_translations_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_videos,
+						temp_table=temp_serie_videos,
+						columns=self.serie_videos_columns,
+						# on_conflict=self.serie_videos_on_conflict,
+						# on_conflict_update=self.serie_videos_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_credits,
+						temp_table=temp_serie_credits,
+						columns=self.serie_credits_columns,
+						# on_conflict=self.serie_credits_on_conflict,
+						# on_conflict_update=self.serie_credits_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_season,
+						temp_table=temp_serie_season,
+						columns=self.serie_season_columns,
+						on_conflict=self.serie_season_on_conflict,
+						on_conflict_update=self.serie_season_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_season_credits,
+						temp_table=temp_serie_season_credits,
+						columns=self.serie_season_credits_columns,
+						# on_conflict=self.serie_season_credits_on_conflict,
+						# on_conflict_update=self.serie_season_credits_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_season_translations,
+						temp_table=temp_serie_season_translations,
+						columns=self.serie_season_translations_columns,
+						# on_conflict=self.serie_season_translations_on_conflict,
+						# on_conflict_update=self.serie_season_translations_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_episode,
+						temp_table=temp_serie_episode,
+						columns=self.serie_episode_columns,
+						on_conflict=self.serie_episode_on_conflict,
+						on_conflict_update=self.serie_episode_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
+						table=self.table_serie_episode_credits,
+						temp_table=temp_serie_episode_credits,
+						columns=self.serie_episode_credits_columns,
+						# on_conflict=self.serie_episode_credits_on_conflict,
+						# on_conflict_update=self.serie_episode_credits_on_conflict_update
+					)
+
+					conn.commit()
+
+					# Delete the CSV files
+					csv["serie"].delete()
+					csv["serie_alternative_titles"].delete()
+					csv["serie_content_ratings"].delete()
+					csv["serie_external_ids"].delete()
+					csv["serie_genres"].delete()
+					csv["serie_images"].delete()
+					csv["serie_keywords"].delete()
+					csv["serie_languages"].delete()
+					csv["serie_networks"].delete()
+					csv["serie_origin_country"].delete()
+					csv["serie_production_companies"].delete()
+					csv["serie_production_countries"].delete()
+					csv["serie_spoken_languages"].delete()
+					csv["serie_translations"].delete()
+					csv["serie_videos"].delete()
+					csv["serie_credits"].delete()
+					csv["serie_season"].delete()
+					csv["serie_season_credits"].delete()
+					csv["serie_season_translations"].delete()
+					csv["serie_episode"].delete()
+					csv["serie_episode_credits"].delete()
 				except Exception as e:
 					conn.rollback()
 					raise

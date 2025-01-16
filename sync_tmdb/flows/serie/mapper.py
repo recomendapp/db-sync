@@ -294,5 +294,131 @@ class Mapper:
 							"episode_count": role["episode_count"]
 						}
 					)
-		
+
+		config.tmp_credit_ids = set([credit["id"] for credit in movie_credits_data])
 		return pd.DataFrame(movie_credits_data)
+	
+	# Seasons
+	@staticmethod
+	def serie_season(config: Config, serie: dict) -> pd.DataFrame:
+		serieId = serie["id"]
+		seasons = serie.get("seasons", [])
+		serie_seasons_data = [
+			{
+				"id": season["id"],
+				"serie_id": serieId,
+				"season_number": season["season_number"],
+				"vote_average": season.get("vote_average", 0),
+				"vote_count": season.get("vote_count", 0),
+				"poster_path": nullify(season.get("poster_path", None), ""),
+			}
+			for season in seasons
+		]
+
+		return pd.DataFrame(serie_seasons_data)
+	
+	@staticmethod
+	def serie_season_credits(config: Config, serie: dict) -> pd.DataFrame:
+		serieId = serie["id"]
+		seasons = serie.get("seasons", [])
+		serie_season_credits_data = []
+
+		for season in seasons:
+			credits = season.get("credits", {})
+			for credit in credits.get("cast", []):
+				if credit["credit_id"] in config.tmp_credit_ids:
+					serie_season_credits_data.append(
+						{
+							"credit_id": credit["credit_id"],
+							"season_id": season["id"],
+							"order": credit["order"],
+						}
+					)
+			
+			for credit in credits.get("crew", []):
+				if credit["credit_id"] in config.tmp_credit_ids:
+					serie_season_credits_data.append(
+						{
+							"credit_id": credit["credit_id"],
+							"season_id": season["id"],
+							"order": None,
+						}
+					)
+		df = pd.DataFrame(serie_season_credits_data)
+		df = df.convert_dtypes()
+		return df
+	
+	@staticmethod
+	def serie_season_translations(config: Config, serie: dict) -> pd.DataFrame:
+		seasons = serie.get("seasons", [])
+		serie_season_translations_data = [
+			{
+				"season_id": season["id"],
+				"name": nullify(translation["data"].get("name", None), ""),
+				"overview": nullify(translation["data"].get("overview", None), ""),
+				"iso_639_1": translation["iso_639_1"],
+				"iso_3166_1": translation["iso_3166_1"]
+			}
+			for season in seasons
+			for translation in season.get("translations", {}).get("translations", [])
+			if nullify(translation["data"].get("name", None), "") or nullify(translation["data"].get("overview", None), "")
+		]
+		
+		return pd.DataFrame(serie_season_translations_data)
+	
+	@staticmethod
+	def serie_episode(config: Config, serie: dict) -> pd.DataFrame:
+		seasons = serie.get("seasons", [])
+		serie_season_episodes_data = []
+
+		for season in seasons:
+			episodes = season.get("episodes", [])
+			for episode in episodes:
+				serie_season_episodes_data.append(
+					{
+						"id": episode["id"],
+						"season_id": season["id"],
+						"air_date": episode.get("air_date", None),
+						"episode_number": episode["episode_number"],
+						"episode_type": nullify(episode.get("episode_type", None), ""),
+						"name": nullify(episode.get("name", None), ""),
+						"overview": nullify(episode.get("overview", None), ""),
+						"production_code": nullify(episode.get("production_code", None), ""),
+						"runtime": episode.get("runtime", 0),
+						"still_path": nullify(episode.get("still_path", None), ""),
+						"vote_average": episode.get("vote_average", 0),
+						"vote_count": episode.get("vote_count", 0),
+					}
+				)
+		
+		df = pd.DataFrame(serie_season_episodes_data)
+		df = df.convert_dtypes()
+		return df
+
+	@staticmethod
+	def serie_episode_credits(config: Config, serie: dict) -> pd.DataFrame:
+		seasons = serie.get("seasons", [])
+		serie_season_episode_credits_data = []
+
+		for season in seasons:
+			episodes = season.get("episodes", [])
+			for episode in episodes:
+				for credit in episode.get("guest_stars", []):
+					if credit["credit_id"] in config.tmp_credit_ids:
+						serie_season_episode_credits_data.append(
+							{
+								"credit_id": credit["credit_id"],
+								"episode_id": episode["id"],
+							}
+						)
+				
+				for credit in episode.get("crew", []):
+					if credit["credit_id"] in config.tmp_credit_ids:
+						serie_season_episode_credits_data.append(
+							{
+								"credit_id": credit["credit_id"],
+								"episode_id": episode["id"],
+							}
+						)
+					
+		return pd.DataFrame(serie_season_episode_credits_data)

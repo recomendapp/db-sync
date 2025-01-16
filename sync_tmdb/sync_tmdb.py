@@ -29,7 +29,7 @@ def sync_tmdb(current_date: date = date.today()):
 		flows.sync_tmdb_network(date=current_date)
 		flows.sync_tmdb_person(date=current_date)
 		flows.sync_tmdb_movie(date=current_date)
-		# flows.sync_tmdb_serie(date=current_date)
+		flows.sync_tmdb_serie(date=current_date)
 	except Exception as e:
 		logger.error(f"Syncing with TMDb failed: {e}")
 		if os.path.exists(".tmp"):
