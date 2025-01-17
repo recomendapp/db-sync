@@ -64,7 +64,7 @@ class SerieConfig(Config):
 		self.missing_series: set = None
 
 		# Columns
-		self.serie_columns: list[str] = ["id", "adult", "in_production", "original_language", "original_name", "popularity", "status", "type", "vote_average", "vote_count"]
+		self.serie_columns: list[str] = ["id", "adult", "in_production", "original_language", "original_name", "popularity", "status", "type", "vote_average", "vote_count", "number_of_episodes", "number_of_seasons", "first_air_date", "last_air_date"]
 		self.serie_alternative_titles_columns: list[str] = ["serie_id", "iso_3166_1", "title", "type"]
 		self.serie_content_ratings_columns: list[str] = ["serie_id", "iso_3166_1", "rating", "descriptors"]
 		self.serie_external_ids_columns: list[str] = ["serie_id", "source", "value"]

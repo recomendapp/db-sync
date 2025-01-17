@@ -18,6 +18,10 @@ class Mapper:
 				"type": nullify(serie.get("type", None), ""),
 				"vote_average": serie.get("vote_average", 0),
 				"vote_count": serie.get("vote_count", 0),
+				"number_of_episodes": serie.get("number_of_episodes", 0),
+				"number_of_seasons": serie.get("number_of_seasons", 0),
+				"first_air_date": serie.get("first_air_date", None),
+				"last_air_date": serie.get("last_air_date", None),
 			}
 		]
 		df = pd.DataFrame(serie_data)
@@ -262,6 +266,7 @@ class Mapper:
 	@staticmethod
 	def serie_credits(config: Config, serie: dict) -> pd.DataFrame:
 		serieId = serie["id"]
+		created_by = serie.get("created_by", [])
 		credits = serie.get("aggregate_credits", {})
 		movie_credits_data = []
 
@@ -294,9 +299,25 @@ class Mapper:
 							"episode_count": role["episode_count"]
 						}
 					)
+		
+		for credit in created_by:
+			if credit["id"] in config.db_persons:
+				movie_credits_data.append(
+					{
+						"id": credit["credit_id"],
+						"serie_id": serieId,
+						"person_id": credit["id"],
+						"department": "Creator",
+						"job": "Creator",
+						"character": None,
+						"episode_count": None
+					}
+				)
 
 		config.tmp_credit_ids = set([credit["id"] for credit in movie_credits_data])
-		return pd.DataFrame(movie_credits_data)
+		df = pd.DataFrame(movie_credits_data)
+		df = df.convert_dtypes()
+		return df
 	
 	# Seasons
 	@staticmethod
