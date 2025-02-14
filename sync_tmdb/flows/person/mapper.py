@@ -80,7 +80,7 @@ class Mapper:
 				"person": personId,
 				"name": name
 			}
-			for name in also_known_as
+			for name in also_known_as if name
 		]
 
 		return pd.DataFrame(person_also_known_as_data)
