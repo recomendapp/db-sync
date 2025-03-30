@@ -41,7 +41,7 @@ class Mapper:
 	@staticmethod
 	def company_alternative_name(company: dict) -> pd.DataFrame:
 		companyId = company["id"]
-		alternative_names = company.get("alternative_names", []).get("results", [])
+		alternative_names = company.get("alternative_names", {}).get("results", [])
 		company_alternative_name_data = [
 			{
 				"company": companyId,
