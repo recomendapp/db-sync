@@ -9,7 +9,7 @@ class Mapper:
 		serie_data = [
 			{
 				"id": serie["id"],
-				"adult": serie.get("adult", False),
+				"adult": serie.get("adult", False) if serie.get("adult") is not None else False,
 				"in_production": serie.get("in_production", False),
 				"original_language": nullify(serie.get("original_language", None), ""),
 				"original_name": nullify(serie.get("original_name", None), ""),

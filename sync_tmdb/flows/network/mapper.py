@@ -38,7 +38,7 @@ class Mapper:
 	@staticmethod
 	def network_alternative_name(network: dict) -> pd.DataFrame:
 		networkId = network["id"]
-		alternative_names = network.get("alternative_names", []).get("results", [])
+		alternative_names = network.get("alternative_names", {}).get("results", [])
 		network_alternative_name_data = [
 			{
 				"network": networkId,
