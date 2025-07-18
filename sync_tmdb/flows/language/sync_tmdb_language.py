@@ -108,7 +108,6 @@ def sync_tmdb_language(date: date = date.today()):
 
 		config.log_manager.success()
 	except Exception as e:
-		logger.error(f"❌ Error while syncing TMDB language for {date}: {repr(e)}")
-		# config.log_manager.failed()
+		config.log_manager.failed()
 		raise ValueError(f"Failed to sync language: {e}")
 
