@@ -56,7 +56,14 @@ class SyncLogsManager:
 			conn = self.db_client.get_connection()
 			try:
 				with conn.cursor() as cursor:
-					cursor.execute(f"UPDATE {self.table} SET status = %s WHERE id = %s", (status, self.current_log.id))
+					cursor.execute(
+						f"""
+						UPDATE {self.table}
+						SET status = %s, updated_at = NOW()
+						WHERE id = %s
+						""",
+						(status, self.current_log.id)
+					)
 					conn.commit()
 					self.logger.info(f"Log {self.current_log.id} updated to {status}")
 					self.current_log.status = status
