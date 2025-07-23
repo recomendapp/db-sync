@@ -51,7 +51,7 @@ def get_tmdb_movies_changed(config: MovieConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed movies: {e}")
 
-@task
+@task(cache_policy=None)
 def get_tmdb_movie_details(config: MovieConfig, movie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"

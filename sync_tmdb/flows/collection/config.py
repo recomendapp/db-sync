@@ -34,7 +34,7 @@ class CollectionConfig(Config):
 		self.collection_translation_on_conflict_update: list[str] = [col for col in self.collection_translation_columns if col not in self.collection_translation_on_conflict]
 		self.collection_image_on_conflict_update: list[str] = [col for col in self.collection_image_columns if col not in self.collection_image_on_conflict]
 
-	@task
+	@task(cache_policy=None)
 	def prune(self):
 		"""Prune the extra collections from the database"""
 		conn = self.db_client.get_connection()
@@ -55,7 +55,7 @@ class CollectionConfig(Config):
 		finally:
 			self.db_client.return_connection(conn)
 	
-	@task
+	@task(cache_policy=None)
 	def push(self, collection_csv: CSVFile, collection_translation_csv: CSVFile, collection_image_csv: CSVFile):
 		"""Push the collections to the database"""
 		conn = self.db_client.get_connection()

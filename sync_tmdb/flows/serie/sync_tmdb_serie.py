@@ -51,7 +51,7 @@ def get_tmdb_series_changed(config: SerieConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed series: {e}")
 
-@task
+@task(cache_policy=None)
 def get_tmdb_serie_details(config: SerieConfig, serie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"
