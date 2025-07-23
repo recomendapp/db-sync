@@ -46,7 +46,7 @@ def get_db_companies(config: CompanyConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task
+@task(cache_policy=None)
 def get_tmdb_company_details(config: CompanyConfig, company_id: int) -> dict:
 	try:
 		company_details = config.tmdb_client.request(f"company/{company_id}", {"append_to_response": "alternative_names,images"})

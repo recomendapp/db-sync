@@ -43,7 +43,7 @@ def get_db_collections(config: CollectionConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task
+@task(cache_policy=None)
 def get_tmdb_collection_details(config: CollectionConfig, collection_id: int) -> dict:
 	try:
 		collection_details = config.tmdb_client.request(f"collection/{collection_id}")

@@ -42,7 +42,7 @@ class PersonConfig(Config):
 		self.person_external_id_on_conflict_update: list[str] = [col for col in self.person_external_id_columns if col not in self.person_external_id_on_conflict]
 		self.person_also_known_as_on_conflict_update: list[str] = [col for col in self.person_also_known_as_columns if col not in self.person_also_known_as_on_conflict]
 
-	@task
+	@task(cache_policy=None)
 	def prune(self):
 		"""Prune the extra persons from the database"""
 		conn = self.db_client.get_connection()
@@ -61,7 +61,7 @@ class PersonConfig(Config):
 		finally:
 			self.db_client.return_connection(conn)
 
-	@task
+	@task(cache_policy=None)
 	def push(self, person_csv: CSVFile, person_translation_csv: CSVFile, person_image_csv: CSVFile, person_external_id_csv: CSVFile, person_also_known_as_csv: CSVFile):
 		"""Push the persons to the database"""
 		conn = self.db_client.get_connection()

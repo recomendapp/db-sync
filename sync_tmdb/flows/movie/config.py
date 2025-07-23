@@ -100,7 +100,7 @@ class MovieConfig(Config):
 		self.movie_translations_on_conflict_update: list[str] = [col for col in self.movie_translations_columns if col not in self.movie_translations_on_conflict]
 		self.movie_videos_on_conflict_update: list[str] = [col for col in self.movie_videos_columns if col not in self.movie_videos_on_conflict]
 
-	@task
+	@task(cache_policy=None)
 	def get_db_data(self):
 		"""Get the data from the database"""
 		try:
@@ -120,7 +120,7 @@ class MovieConfig(Config):
 			self.db_persons = set([item[0] for item in db_persons])
 		except Exception as e:
 			raise ValueError(f"Failed to get the data from the database: {e}")
-	@task
+	@task(cache_policy=None)
 	def prune(self):
 		"""Prune the extra movies from the database"""
 		conn = self.db_client.get_connection()
@@ -139,7 +139,7 @@ class MovieConfig(Config):
 		finally:
 			self.db_client.return_connection(conn)
 
-	@task
+	@task(cache_policy=None)
 	def push(self, csv: dict[str, CSVFile]):
 		"""Push the movies to the database"""
 		conn = self.db_client.get_connection()

@@ -45,7 +45,7 @@ def get_db_networks(config: NetworkConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task
+@task(cache_policy=None)
 def get_tmdb_network_details(config: NetworkConfig, network_id: int) -> dict:
 	try:
 		network_details = config.tmdb_client.request(f"network/{network_id}", {"append_to_response": "alternative_names,images"})

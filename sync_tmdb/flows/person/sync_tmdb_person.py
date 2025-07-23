@@ -51,7 +51,7 @@ def get_tmdb_persons_changed(config: PersonConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed persons: {e}")
 
-@task
+@task(cache_policy=None)
 def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 	try:
 		# Get persons details from TMDB in the default language and the extra languages
