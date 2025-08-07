@@ -3,10 +3,8 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 from more_itertools import chunked
-import time
-import ast
+from typing import Dict, Set, Tuple
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -22,15 +20,16 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_movies(config: MovieConfig) -> set:
+def get_tmdb_movies(config: MovieConfig) -> Tuple[Set[int], Dict[int, float]]:
 	try:
 		tmdb_movies = config.tmdb_client.get_export_ids(type="movie", date=config.date)
 		tmdb_movies_set = set([item["id"] for item in tmdb_movies])
-		return tmdb_movies_set
+		tmdb_movies_popularity = {item["id"]: item["popularity"] for item in tmdb_movies if "popularity" in item}
+		return tmdb_movies_set, tmdb_movies_popularity
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB movies: {e}")
 
-def get_db_movies(config: MovieConfig) -> set:
+def get_db_movies(config: MovieConfig) -> Set[int]:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
@@ -188,16 +187,16 @@ def process_missing_movies(config: MovieConfig):
 # ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb_movie", log_prints=True)
-def sync_tmdb_movie(date: date = date.today()):
+def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 	logger = get_run_logger()
 	logger.info(f"Syncing movie for {date}...")
+	config = MovieConfig(date=date)
 	try:
-		config = MovieConfig(date=date)
 		config.log_manager.init(type="tmdb_movie")
 
 		# Get the list of movie from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_movies_set = get_tmdb_movies(config)
+		tmdb_movies_set, tmdb_movies_popularity = get_tmdb_movies(config)
 		db_movies_set = get_db_movies(config)
 
 		# Compare the movies and process missing movies
@@ -211,6 +210,15 @@ def sync_tmdb_movie(date: date = date.today()):
 		config.log_manager.syncing_to_db()
 		config.prune()
 		process_missing_movies(config=config)
+
+		if update_popularity:
+			config.logger.info("Updating popularity of movies...")
+			config.update_popularity(
+				popularity_data=tmdb_movies_popularity,
+				table_name=config.table_movie,
+				content_type="movie",
+			)
+		
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()

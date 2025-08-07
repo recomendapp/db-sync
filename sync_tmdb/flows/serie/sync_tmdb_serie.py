@@ -3,10 +3,8 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 from more_itertools import chunked
-import time
-import ast
+from typing import Dict, Set, Tuple
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -22,15 +20,16 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_series(config: SerieConfig) -> set:
+def get_tmdb_series(config: SerieConfig) -> Tuple[Set[int], Dict[int, float]]:
 	try:
 		tmdb_series = config.tmdb_client.get_export_ids(type="tv_series", date=config.date)
 		tmdb_series_set = set([item["id"] for item in tmdb_series])
-		return tmdb_series_set
+		tmdb_series_popularity = {item["id"]: item["popularity"] for item in tmdb_series if "popularity" in item}
+		return tmdb_series_set, tmdb_series_popularity
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB series: {e}")
 
-def get_db_series(config: SerieConfig) -> set:
+def get_db_series(config: SerieConfig) -> Set[int]:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
@@ -260,13 +259,13 @@ def process_missing_series(config: SerieConfig):
 def sync_tmdb_serie(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing serie for {date}...")
+	config = SerieConfig(date=date)
 	try:
-		config = SerieConfig(date=date)
 		config.log_manager.init(type="tmdb_tv_serie")
 
 		# Get the list of series from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_series_set = get_tmdb_series(config)
+		tmdb_series_set, tmdb_series_popularity = get_tmdb_series(config)
 		db_series_set = get_db_series(config)
 
 		# Compare the series and process missing serries
@@ -280,6 +279,14 @@ def sync_tmdb_serie(date: date = date.today()):
 		config.log_manager.syncing_to_db()
 		config.prune()
 		process_missing_series(config=config)
+
+		if config.update_popularity:
+			config.logger.info("Updating popularity of series...")
+			config.update_popularity(
+				popularity_data={tmdb_series_popularity},
+				table_name=config.table_serie,
+				content_type="serie",
+			)
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()

@@ -6,9 +6,8 @@ from datetime import date
 from psycopg2.extras import execute_values
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
 
 from .config import CountryConfig
 
@@ -84,9 +83,8 @@ def process_missing_countries(config: CountryConfig, missing_countries_set: set)
 def sync_tmdb_country(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing country for {date}...")
+	config = CountryConfig(date=date)
 	try:
-		config = CountryConfig(date=date)
-
 		config.log_manager.init(type="tmdb_country")
 
 		# Get the list of country from TMDB and the database

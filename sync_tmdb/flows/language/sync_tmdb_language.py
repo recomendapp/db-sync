@@ -6,9 +6,8 @@ from datetime import date
 from psycopg2.extras import execute_values
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
 
 from ...utils.file_manager import create_csv, get_csv_header
 from .config import LanguageConfig
@@ -86,9 +85,8 @@ def process_missing_languages(config: LanguageConfig, missing_languages_set: set
 def sync_tmdb_language(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing language for {date}...")
+	config = LanguageConfig(date=date)
 	try:
-		config = LanguageConfig(date=date)
-
 		config.log_manager.init(type="tmdb_language")
 
 		# Get the list of languages from TMDB and the database

@@ -3,14 +3,12 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 from more_itertools import chunked
-import time
+from typing import Dict, Set, Tuple
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
-from prefect.futures import wait
 
 from .config import PersonConfig
 from .mapper import Mapper
@@ -22,15 +20,16 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_persons(config: PersonConfig) -> set:
+def get_tmdb_persons(config: PersonConfig) -> Tuple[Set[int], Dict[int, float]]:
 	try:
 		tmdb_persons = config.tmdb_client.get_export_ids(type="person", date=config.date)
 		tmdb_persons_set = set([item["id"] for item in tmdb_persons])
-		return tmdb_persons_set
+		tmdb_persons_popularity = {item["id"]: item["popularity"] for item in tmdb_persons if "popularity" in item}
+		return tmdb_persons_set, tmdb_persons_popularity
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB persons: {e}")
 
-def get_db_persons(config: PersonConfig) -> set:
+def get_db_persons(config: PersonConfig) -> Set[int]:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
@@ -118,16 +117,16 @@ def process_missing_persons(config: PersonConfig):
 # ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb_person", log_prints=True)
-def sync_tmdb_person(date: date = date.today()):
+def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 	logger = get_run_logger()
 	logger.info(f"Syncing person for {date}...")
+	config = PersonConfig(date=date)
 	try:
-		config = PersonConfig(date=date)
 		config.log_manager.init(type="tmdb_person")
 
 		# Get the list of person from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_persons_set = get_tmdb_persons(config)
+		tmdb_persons_set, tmdb_persons_popularity = get_tmdb_persons(config)
 		db_persons_set = get_db_persons(config)
 
 		# Compare the persons and process missing persons
@@ -141,6 +140,15 @@ def sync_tmdb_person(date: date = date.today()):
 		config.log_manager.syncing_to_db()
 		config.prune()
 		process_missing_persons(config=config)
+
+		if update_popularity:
+			config.logger.info("Updating popularity of persons...")
+			config.update_popularity(
+				popularity_data=tmdb_persons_popularity,
+				table_name=config.table_person,
+				content_type="person",
+			)
+		
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()

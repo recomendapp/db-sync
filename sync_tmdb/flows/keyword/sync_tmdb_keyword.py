@@ -3,12 +3,10 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
 
 from ...utils.file_manager import create_csv, get_csv_header
 from .config import KeywordConfig
@@ -102,9 +100,8 @@ def process_missing_keywords(config: KeywordConfig, tmdb_keywords: list, missing
 def sync_tmdb_keyword(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing keyword for {date}...")
+	config = KeywordConfig(date=date)
 	try:
-		config = KeywordConfig(date=date)
-
 		config.log_manager.init(type="tmdb_keyword")
 
 		# Get the list of keyword from TMDB and the database
