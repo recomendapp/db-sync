@@ -3,12 +3,10 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
 
 from ...utils.file_manager import create_csv, get_csv_header
 from .config import GenreConfig
@@ -130,9 +128,8 @@ def process_missing_genres(config: GenreConfig, tmdb_genres: list, missing_genre
 def sync_tmdb_genre(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing genre for {date}...")
+	config = GenreConfig(date=date)
 	try:
-		config = GenreConfig(date=date)
-
 		config.log_manager.init(type="tmdb_genre")
 
 		# Get the list of genre from TMDB and the database

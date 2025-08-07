@@ -3,15 +3,11 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 from more_itertools import chunked
-import time
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
-from prefect.futures import wait
 
 from ...utils.file_manager import create_csv, get_csv_header
 from .config import CompanyConfig
@@ -101,8 +97,8 @@ def process_missing_companies(config: CompanyConfig):
 def sync_tmdb_company(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing company for {date}...")
+	config = CompanyConfig(date=date)
 	try:
-		config = CompanyConfig(date=date)
 		config.log_manager.init(type="tmdb_company")
 
 		# Get the list of companies from TMDB and the database

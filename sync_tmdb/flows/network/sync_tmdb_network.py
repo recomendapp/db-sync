@@ -3,15 +3,11 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
-import pandas as pd
 from more_itertools import chunked
-import time
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
-from prefect.blocks.system import Secret
-from prefect.futures import wait
 
 from .config import NetworkConfig
 from .mapper import Mapper
@@ -101,8 +97,8 @@ def process_missing_networks(config: NetworkConfig):
 def sync_tmdb_network(date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Syncing network for {date}...")
+	config = NetworkConfig(date=date)
 	try:
-		config = NetworkConfig(date=date)
 		config.log_manager.init(type="tmdb_network")
 
 		# Get the list of networks from TMDB and the database
