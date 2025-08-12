@@ -9,6 +9,7 @@ from .sync_logs_manager import SyncLogsManager
 from prefect.variables import Variable
 from prefect.logging import get_run_logger
 from prefect import task
+import psycopg2.extras
 
 class Config:
 	def __init__(self, date: date):
@@ -25,53 +26,46 @@ class Config:
 
 	@task(cache_policy=None)
 	def update_popularity(self, popularity_data: dict, table_name: str, content_type: str = "items"):
-		"""Update the popularity in the database for any content type
-		
-		Args:
-			popularity_data: Dict with {id: popularity} mapping
-			table_name: Name of the table to update
-			content_type: Type of content for logging (e.g., "persons", "movies", "series")
-		"""
 		if not popularity_data:
 			self.logger.info(f"No popularity data to update for {content_type}")
 			return
-			
+
+		self.logger.info(f"Updating popularity for {len(popularity_data)} {content_type} with batch method...")
+		
 		conn = self.db_client.get_connection()
 		try:
 			with conn.cursor() as cursor:
-				try:
-					conn.autocommit = False
-					
-					# Construire la requête UPDATE avec CASE en une seule transaction
-					case_statements = [
-						f"WHEN {item_id} THEN {popularity}" 
-						for item_id, popularity in popularity_data.items()
-					]
-					
-					ids_str = ','.join(map(str, popularity_data.keys()))
-					query = f"""
-					UPDATE {table_name} 
-					SET popularity = CASE id 
-						{' '.join(case_statements)}
-					END
-					WHERE id IN ({ids_str})
-					"""
-					
-					cursor.execute(query)
-					updated_count = cursor.rowcount
-					conn.commit()
-					
-					self.logger.info(f"Updated popularity for {updated_count} {content_type} (out of {len(popularity_data)} from TMDB)")
-					
-				except Exception as e:
-					conn.rollback()
-					raise ValueError(f"Failed to update popularity for {content_type}: {e}")
-				finally:
-					conn.autocommit = True
+				conn.autocommit = False
+
+				cursor.execute(f"CREATE TEMP TABLE temp_{table_name}_popularity_update (id INTEGER PRIMARY KEY, popularity REAL) ON COMMIT DROP;")
+
+				data_to_insert = list(popularity_data.items())
+				
+				psycopg2.extras.execute_values(
+					cursor,
+					f"INSERT INTO temp_{table_name}_popularity_update (id, popularity) VALUES %s",
+					data_to_insert
+				)
+				
+				update_query = f"""
+				UPDATE {table_name} AS p
+				SET popularity = t.popularity
+				FROM temp_{table_name}_popularity_update AS t
+				WHERE p.id = t.id;
+				"""
+				cursor.execute(update_query)
+				
+				updated_count = cursor.rowcount
+				conn.commit()
+				
+				self.logger.info(f"Successfully updated popularity for {updated_count} {content_type}.")
+				
 		except Exception as e:
+			conn.rollback()
 			raise ValueError(f"Failed to update popularity for {content_type}: {e}")
 		finally:
 			self.db_client.return_connection(conn)
+
 
 	# def __del__(self):
 	# 	self.logger.info("Cleaning up...")

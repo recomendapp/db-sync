@@ -29,14 +29,14 @@ def get_tmdb_movies(config: MovieConfig) -> Tuple[Set[int], Dict[int, float]]:
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB movies: {e}")
 
-def get_db_movies(config: MovieConfig) -> Set[int]:
+def get_db_movies(config: MovieConfig) -> Dict[int, float]:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id FROM {config.table_movie}")
+			cursor.execute(f"SELECT id, popularity FROM {config.table_movie}")
 			db_movies = cursor.fetchall()
-			db_movies_set = set([item[0] for item in db_movies])
-			return db_movies_set
+			db_movies_with_popularity = {item[0]: item[1] for item in db_movies}
+			return db_movies_with_popularity
 	except Exception as e:
 		raise ValueError(f"Failed to get database movies: {e}")
 	finally:
@@ -197,7 +197,8 @@ def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 		# Get the list of movie from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_movies_set, tmdb_movies_popularity = get_tmdb_movies(config)
-		db_movies_set = get_db_movies(config)
+		db_movies_with_popularity = get_db_movies(config)
+		db_movies_set = set(db_movies_with_popularity.keys())
 
 		# Compare the movies and process missing movies
 		config.extra_movies = db_movies_set - tmdb_movies_set
@@ -212,9 +213,13 @@ def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 		process_missing_movies(config=config)
 
 		if update_popularity:
-			config.logger.info("Updating popularity of movies...")
+			config.log_manager.updating_popularity()
+			popularity_to_update = {
+				movie_id: popularity for movie_id, popularity in tmdb_movies_popularity.items()
+				if movie_id not in db_movies_with_popularity or db_movies_with_popularity[movie_id] != popularity
+			}
 			config.update_popularity(
-				popularity_data=tmdb_movies_popularity,
+				popularity_data=popularity_to_update,
 				table_name=config.table_movie,
 				content_type="movie",
 			)

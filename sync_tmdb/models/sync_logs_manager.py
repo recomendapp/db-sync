@@ -112,6 +112,12 @@ class SyncLogsManager:
 		Update the status of the current log to syncing_to_db
 		"""
 		self.update_log("syncing_to_db")
+	
+	def updating_popularity(self) -> None:
+		"""
+		Update the status of the current log to updating_popularity
+		"""
+		self.update_log("updating_popularity")
 
 	def failed(self) -> None:
 		"""

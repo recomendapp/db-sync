@@ -29,14 +29,14 @@ def get_tmdb_series(config: SerieConfig) -> Tuple[Set[int], Dict[int, float]]:
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB series: {e}")
 
-def get_db_series(config: SerieConfig) -> Set[int]:
+def get_db_series(config: SerieConfig) -> Dict[int, float]:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id FROM {config.table_serie}")
+			cursor.execute(f"SELECT id, popularity FROM {config.table_serie}")
 			db_series = cursor.fetchall()
-			db_series_set = set([item[0] for item in db_series])
-			return db_series_set
+			db_series_with_popularity = {item[0]: item[1] for item in db_series}
+			return db_series_with_popularity
 	except Exception as e:
 		raise ValueError(f"Failed to get database series: {e}")
 	finally:
@@ -266,7 +266,8 @@ def sync_tmdb_serie(date: date = date.today()):
 		# Get the list of series from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_series_set, tmdb_series_popularity = get_tmdb_series(config)
-		db_series_set = get_db_series(config)
+		db_series_with_popularity = get_db_series(config)
+		db_series_set = set(db_series_with_popularity.keys())
 
 		# Compare the series and process missing serries
 		config.extra_series = db_series_set - tmdb_series_set
@@ -281,9 +282,13 @@ def sync_tmdb_serie(date: date = date.today()):
 		process_missing_series(config=config)
 
 		if config.update_popularity:
-			config.logger.info("Updating popularity of series...")
+			config.log_manager.updating_popularity()
+			popularity_to_update = {
+				serie_id: popularity for serie_id, popularity in tmdb_series_popularity.items()
+				if serie_id not in db_series_with_popularity or db_series_with_popularity[serie_id] != popularity
+			}
 			config.update_popularity(
-				popularity_data={tmdb_series_popularity},
+				popularity_data=popularity_to_update,
 				table_name=config.table_serie,
 				content_type="serie",
 			)

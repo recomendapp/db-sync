@@ -29,14 +29,14 @@ def get_tmdb_persons(config: PersonConfig) -> Tuple[Set[int], Dict[int, float]]:
 	except Exception as e:
 		raise ValueError(f"Failed to get TMDB persons: {e}")
 
-def get_db_persons(config: PersonConfig) -> Set[int]:
+def get_db_persons(config: PersonConfig) -> Dict[int, float]:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id FROM {config.table_person}")
+			cursor.execute(f"SELECT id, popularity FROM {config.table_person}")
 			db_persons = cursor.fetchall()
-			db_persons_set = set([item[0] for item in db_persons])
-			return db_persons_set
+			db_persons_with_popularity = {item[0]: item[1] for item in db_persons}
+			return db_persons_with_popularity
 	except Exception as e:
 		raise ValueError(f"Failed to get database persons: {e}")
 	finally:
@@ -127,7 +127,8 @@ def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 		# Get the list of person from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_persons_set, tmdb_persons_popularity = get_tmdb_persons(config)
-		db_persons_set = get_db_persons(config)
+		db_persons_with_popularity = get_db_persons(config)
+		db_persons_set = set(db_persons_with_popularity.keys())
 
 		# Compare the persons and process missing persons
 		config.extra_persons = db_persons_set - tmdb_persons_set
@@ -142,9 +143,13 @@ def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 		process_missing_persons(config=config)
 
 		if update_popularity:
-			config.logger.info("Updating popularity of persons...")
+			config.log_manager.updating_popularity()
+			popularity_to_update = {
+				person_id: popularity for person_id, popularity in tmdb_persons_popularity.items()
+				if person_id not in db_persons_with_popularity or db_persons_with_popularity[person_id] != popularity
+			}
 			config.update_popularity(
-				popularity_data=tmdb_persons_popularity,
+				popularity_data=popularity_to_update,
 				table_name=config.table_person,
 				content_type="person",
 			)
