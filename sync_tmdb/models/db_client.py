@@ -3,12 +3,8 @@ from prefect.blocks.system import Secret
 from contextlib import contextmanager
 
 class DBClient:
-	nb_open_connections = 0
-	nb_close_connections = 0
-
 	def __init__(self):
 		self.connection_string = self._get_postgres_connection_string("postgres-connection-string")
-		self.connection_pool = psycopg2.pool.SimpleConnectionPool(1, 20, self.connection_string)
 	
 	def _get_postgres_connection_string(self, secret_name: str) -> str:
 		try:
@@ -17,12 +13,10 @@ class DBClient:
 			raise ValueError(f"Postgres connection string not found: {e}")
 		
 	def get_connection(self):
-		self.nb_open_connections += 1
-		return self.connection_pool.getconn()
+		return psycopg2.connect(self.connection_string)
 	
 	def return_connection(self, conn):
-		self.nb_close_connections += 1
-		return self.connection_pool.putconn(conn)
+		return conn.close()
 
 	def close_connection(self):
 		self.connection_pool.closeall()

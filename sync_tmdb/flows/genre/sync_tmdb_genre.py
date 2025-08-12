@@ -52,9 +52,7 @@ def get_db_genres(config: GenreConfig) -> set:
 		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT id FROM {config.table_genre}")
-				db_genres = cursor.fetchall()
-				db_genres_set = set([item[0] for item in db_genres])
-				return db_genres_set
+				return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database genres: {e}")
 

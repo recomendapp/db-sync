@@ -4,7 +4,7 @@
 
 from datetime import date
 from more_itertools import chunked
-from typing import Dict, Set, Tuple
+import gc
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -20,23 +20,12 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_series(config: SerieConfig) -> Tuple[Set[int], Dict[int, float]]:
-	try:
-		tmdb_series = config.tmdb_client.get_export_ids(type="tv_series", date=config.date)
-		tmdb_series_set = set([item["id"] for item in tmdb_series])
-		tmdb_series_popularity = {item["id"]: item["popularity"] for item in tmdb_series if "popularity" in item}
-		return tmdb_series_set, tmdb_series_popularity
-	except Exception as e:
-		raise ValueError(f"Failed to get TMDB series: {e}")
-
-def get_db_series(config: SerieConfig) -> Dict[int, float]:
+def get_db_series(config: SerieConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id, popularity FROM {config.table_serie}")
-			db_series = cursor.fetchall()
-			db_series_with_popularity = {item[0]: item[1] for item in db_series}
-			return db_series_with_popularity
+			cursor.execute(f"SELECT id FROM {config.table_serie}")
+			return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database series: {e}")
 	finally:
@@ -50,7 +39,7 @@ def get_tmdb_series_changed(config: SerieConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed series: {e}")
 
-@task(cache_policy=None)
+@task(cache_policy=None, log_prints=False)
 def get_tmdb_serie_details(config: SerieConfig, serie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"
@@ -256,7 +245,7 @@ def process_missing_series(config: SerieConfig):
 # ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb_serie", log_prints=True)
-def sync_tmdb_serie(date: date = date.today()):
+def sync_tmdb_serie(date: date = date.today(), update_popularity: bool = True):
 	logger = get_run_logger()
 	logger.info(f"Syncing serie for {date}...")
 	config = SerieConfig(date=date)
@@ -265,9 +254,16 @@ def sync_tmdb_serie(date: date = date.today()):
 
 		# Get the list of series from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_series_set, tmdb_series_popularity = get_tmdb_series(config)
-		db_series_with_popularity = get_db_series(config)
-		db_series_set = set(db_series_with_popularity.keys())
+		tmdb_series_df = config.tmdb_client.get_export_ids(type="tv_series", date=config.date)
+		tmdb_series_set = set(tmdb_series_df["id"])
+		if update_popularity and 'popularity' in tmdb_series_df.columns:
+			tmdb_series_popularity = tmdb_series_df.set_index('id')['popularity'].to_dict()
+		else:
+			tmdb_series_popularity = {}
+		db_series_set = get_db_series(config)
+
+		del tmdb_series_df
+		gc.collect()
 
 		# Compare the series and process missing serries
 		config.extra_series = db_series_set - tmdb_series_set
@@ -281,17 +277,14 @@ def sync_tmdb_serie(date: date = date.today()):
 		config.prune()
 		process_missing_series(config=config)
 
-		if config.update_popularity:
+		if update_popularity:
 			config.log_manager.updating_popularity()
-			popularity_to_update = {
-				serie_id: popularity for serie_id, popularity in tmdb_series_popularity.items()
-				if serie_id not in db_series_with_popularity or db_series_with_popularity[serie_id] != popularity
-			}
 			config.update_popularity(
-				popularity_data=popularity_to_update,
+				tmdb_popularity_data=tmdb_series_popularity,
 				table_name=config.table_serie,
-				content_type="serie",
+				content_type=config.flow_name,
 			)
+		
 		config.log_manager.success()
 	except Exception as e:
 		config.log_manager.failed()

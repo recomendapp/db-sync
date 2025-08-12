@@ -1,14 +1,13 @@
 from prefect import task
 from prefect.logging import get_run_logger
 from prefect.blocks.system import Secret
-# from prefect.concurrency.sync import rate_limit
 from itertools import cycle
 import requests
 from datetime import date
 from ..utils.file_manager import download_file, decompress_file
 from ..utils.concurreny import limit_concurrency
 import os
-import json
+import pandas as pd
 
 class TMDBClient:
 	def __init__(self, config: dict):
@@ -46,30 +45,32 @@ class TMDBClient:
 			raise ValueError(f"Failed to get data from TMDB: {data}")
 		return data
 
-	@task(cache_policy=None)
-	def get_export_ids(self, type: str, date: date) -> list:
+	@task(cache_policy=None, cache_result_in_memory=False, persist_result=False)
+	def get_export_ids(self, type: str, date: date) -> pd.DataFrame:
 		try:
 			tmdb_export_collection_url_template = "http://files.tmdb.org/p/exports/{type}_ids_{date}.json.gz"
 			url = tmdb_export_collection_url_template.format(type=type, date=date.strftime("%m_%d_%Y"))
 
 			file = download_file(url=url, tmp_directory=".tmp", prefix=f"{type}_ids_{date}")
-
 			file = decompress_file(file)
 
-			with open(file, "r", encoding="utf-8") as f:
-				export_ids = [json.loads(line) for line in f.readlines()]
-			
+			df = pd.read_json(file, lines=True)
+
 			if os.path.exists(file):
 				os.remove(file)
 			
-			if len(export_ids) == 0:
+			if len(df) == 0:
 				raise ValueError(f"No export ids found for {type} on {date}")
-			
-			return export_ids
+
+			return df
+
 		except Exception as e:
+			# Pensez à supprimer le fichier même en cas d'erreur
+			if 'file' in locals() and os.path.exists(file):
+				os.remove(file)
 			raise ValueError(f"Failed to get export ids: {e}")
 	
-	@task(cache_policy=None)
+	@task(cache_policy=None, log_prints=False)
 	def get_changed_ids(self, type: str, start_date: date, end_date: date) -> set:
 		try:
 			ids: set = set()

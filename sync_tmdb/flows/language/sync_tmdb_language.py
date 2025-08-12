@@ -31,9 +31,7 @@ def get_db_languages(config: LanguageConfig) -> set:
 		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT {config.language_column} FROM {config.table_language}")
-				db_languages = cursor.fetchall()
-				db_languages_set = set([lang[0] for lang in db_languages])
-				return db_languages_set
+				return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database languages: {e}")
 

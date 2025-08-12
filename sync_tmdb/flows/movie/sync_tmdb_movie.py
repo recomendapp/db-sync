@@ -4,7 +4,7 @@
 
 from datetime import date
 from more_itertools import chunked
-from typing import Dict, Set, Tuple
+import gc
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -20,23 +20,12 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_movies(config: MovieConfig) -> Tuple[Set[int], Dict[int, float]]:
-	try:
-		tmdb_movies = config.tmdb_client.get_export_ids(type="movie", date=config.date)
-		tmdb_movies_set = set([item["id"] for item in tmdb_movies])
-		tmdb_movies_popularity = {item["id"]: item["popularity"] for item in tmdb_movies if "popularity" in item}
-		return tmdb_movies_set, tmdb_movies_popularity
-	except Exception as e:
-		raise ValueError(f"Failed to get TMDB movies: {e}")
-
-def get_db_movies(config: MovieConfig) -> Dict[int, float]:
+def get_db_movies(config: MovieConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id, popularity FROM {config.table_movie}")
-			db_movies = cursor.fetchall()
-			db_movies_with_popularity = {item[0]: item[1] for item in db_movies}
-			return db_movies_with_popularity
+			cursor.execute(f"SELECT id FROM {config.table_movie}")
+			return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database movies: {e}")
 	finally:
@@ -50,7 +39,7 @@ def get_tmdb_movies_changed(config: MovieConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed movies: {e}")
 
-@task(cache_policy=None)
+@task(cache_policy=None, log_prints=False)
 def get_tmdb_movie_details(config: MovieConfig, movie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"
@@ -196,9 +185,16 @@ def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 
 		# Get the list of movie from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_movies_set, tmdb_movies_popularity = get_tmdb_movies(config)
-		db_movies_with_popularity = get_db_movies(config)
-		db_movies_set = set(db_movies_with_popularity.keys())
+		tmdb_movies_df = config.tmdb_client.get_export_ids(type="movie", date=config.date)
+		tmdb_movies_set = set(tmdb_movies_df["id"])
+		if update_popularity and 'popularity' in tmdb_movies_df.columns:
+			tmdb_movies_popularity = tmdb_movies_df.set_index('id')['popularity'].to_dict()
+		else:
+			tmdb_movies_popularity = {}
+		db_movies_set = get_db_movies(config)
+
+		del tmdb_movies_df
+		gc.collect()
 
 		# Compare the movies and process missing movies
 		config.extra_movies = db_movies_set - tmdb_movies_set
@@ -214,14 +210,10 @@ def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 
 		if update_popularity:
 			config.log_manager.updating_popularity()
-			popularity_to_update = {
-				movie_id: popularity for movie_id, popularity in tmdb_movies_popularity.items()
-				if movie_id not in db_movies_with_popularity or db_movies_with_popularity[movie_id] != popularity
-			}
 			config.update_popularity(
-				popularity_data=popularity_to_update,
+				tmdb_popularity_data=tmdb_movies_popularity,
 				table_name=config.table_movie,
-				content_type="movie",
+				content_type=config.flow_name,
 			)
 		
 		config.log_manager.success()

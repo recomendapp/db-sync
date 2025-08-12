@@ -30,9 +30,7 @@ def get_db_countries(config: CountryConfig) -> set:
 		with config.db_client.connection() as conn:
 			with conn.cursor() as cursor:
 				cursor.execute(f"SELECT {config.country_column} FROM {config.table_country}")
-				db_countries = cursor.fetchall()
-				db_countries_set = set([item[0] for item in db_countries])
-				return db_countries_set
+				return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database countries: {e}")
 

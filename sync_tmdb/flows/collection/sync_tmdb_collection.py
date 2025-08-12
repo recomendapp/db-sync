@@ -4,6 +4,7 @@
 
 from datetime import date
 from more_itertools import chunked
+import gc
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -19,28 +20,18 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_collections(config: CollectionConfig) -> set:
-	try:
-		tmdb_collections = config.tmdb_client.get_export_ids(type="collection", date=config.date)
-		tmdb_collections_set = set([item["id"] for item in tmdb_collections])
-		return tmdb_collections_set
-	except Exception as e:
-		raise ValueError(f"Failed to get TMDB collections: {e}")
-
 def get_db_collections(config: CollectionConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
 			cursor.execute(f"SELECT id FROM {config.table_collection}")
-			db_collections = cursor.fetchall()
-			db_collections_set = set([item[0] for item in db_collections])
-			return db_collections_set
+			return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database collections: {e}")
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=None)
+@task(cache_policy=None, log_prints=False)
 def get_tmdb_collection_details(config: CollectionConfig, collection_id: int) -> dict:
 	try:
 		collection_details = config.tmdb_client.request(f"collection/{collection_id}")
@@ -108,7 +99,11 @@ def sync_tmdb_collection(date: date = date.today()):
 
 		# Get the list of collection from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_collections_set = get_tmdb_collections(config)
+		tmdb_collections_df = config.tmdb_client.get_export_ids(type="collection", date=config.date)
+		tmdb_collections_set = set(tmdb_collections_df["id"])
+		del tmdb_collections_df
+		gc.collect()
+
 		db_collections_set = get_db_collections(config)
 
 		# Compare the collections and process missing collections

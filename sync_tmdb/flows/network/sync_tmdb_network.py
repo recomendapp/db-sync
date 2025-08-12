@@ -4,6 +4,7 @@
 
 from datetime import date
 from more_itertools import chunked
+import gc
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -19,29 +20,18 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_networks(config: NetworkConfig) -> set:
-	try:
-		tmdb_networks = config.tmdb_client.get_export_ids(type="tv_network", date=config.date)
-		tmdb_networks_set = set([item["id"] for item in tmdb_networks])
-
-		return tmdb_networks_set
-	except Exception as e:
-		raise ValueError(f"Failed to get TMDB networks: {e}")
-
 def get_db_networks(config: NetworkConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
 			cursor.execute(f"SELECT id FROM {config.table_network}")
-			db_networks = cursor.fetchall()
-			db_networks_set = set([item[0] for item in db_networks])
-			return db_networks_set
+			return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database networks: {e}")
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=None)
+@task(cache_policy=None, log_prints=False)
 def get_tmdb_network_details(config: NetworkConfig, network_id: int) -> dict:
 	try:
 		network_details = config.tmdb_client.request(f"network/{network_id}", {"append_to_response": "alternative_names,images"})
@@ -103,7 +93,11 @@ def sync_tmdb_network(date: date = date.today()):
 
 		# Get the list of networks from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_networks_set = get_tmdb_networks(config)
+		tmdb_networks_df = config.tmdb_client.get_export_ids(type="tv_network", date=config.date)
+		tmdb_networks_set = set(tmdb_networks_df["id"])
+		del tmdb_networks_df
+		gc.collect()
+
 		db_networks_set = get_db_networks(config)
 
 		# Compare the networks

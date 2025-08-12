@@ -4,12 +4,12 @@
 
 from datetime import date
 from more_itertools import chunked
+import gc
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
 
-from ...utils.file_manager import create_csv, get_csv_header
 from .config import CompanyConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
@@ -20,29 +20,18 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_companies(config: CompanyConfig) -> set:
-	try:
-		tmdb_companies = config.tmdb_client.get_export_ids(type="production_company", date=config.date)
-		tmdb_companies_set = set([item["id"] for item in tmdb_companies])
-
-		return tmdb_companies_set
-	except Exception as e:
-		raise ValueError(f"Failed to get TMDB companies: {e}")
-
 def get_db_companies(config: CompanyConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
 			cursor.execute(f"SELECT id FROM {config.table_company}")
-			db_companies = cursor.fetchall()
-			db_companies_set = set([item[0] for item in db_companies])
-			return db_companies_set
+			return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database companies: {e}")
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=None)
+@task(cache_policy=None, log_prints=False)
 def get_tmdb_company_details(config: CompanyConfig, company_id: int) -> dict:
 	try:
 		company_details = config.tmdb_client.request(f"company/{company_id}", {"append_to_response": "alternative_names,images"})
@@ -103,7 +92,11 @@ def sync_tmdb_company(date: date = date.today()):
 
 		# Get the list of companies from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_companies_set = get_tmdb_companies(config)
+		tmdb_companies_df = config.tmdb_client.get_export_ids(type="production_company", date=config.date)
+		tmdb_companies_set = set(tmdb_companies_df["id"])
+		del tmdb_companies_df
+		gc.collect()
+
 		db_companies_set = get_db_companies(config)
 
 		# Compare the companies

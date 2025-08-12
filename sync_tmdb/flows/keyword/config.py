@@ -8,8 +8,3 @@ class KeywordConfig(Config):
 
 		# Tables
 		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb_keyword")
-
-		# CSV file containing the missing keywords
-		self.keyword: str = None
-
-

@@ -4,7 +4,7 @@
 
 from datetime import date
 from more_itertools import chunked
-from typing import Dict, Set, Tuple
+import gc
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
@@ -20,23 +20,12 @@ from ...models.csv_file import CSVFile
 #                                    Getters                                   #
 # ---------------------------------------------------------------------------- #
 
-def get_tmdb_persons(config: PersonConfig) -> Tuple[Set[int], Dict[int, float]]:
-	try:
-		tmdb_persons = config.tmdb_client.get_export_ids(type="person", date=config.date)
-		tmdb_persons_set = set([item["id"] for item in tmdb_persons])
-		tmdb_persons_popularity = {item["id"]: item["popularity"] for item in tmdb_persons if "popularity" in item}
-		return tmdb_persons_set, tmdb_persons_popularity
-	except Exception as e:
-		raise ValueError(f"Failed to get TMDB persons: {e}")
-
-def get_db_persons(config: PersonConfig) -> Dict[int, float]:
+def get_db_persons(config: PersonConfig) -> set:
 	conn = config.db_client.get_connection()
 	try:
 		with conn.cursor() as cursor:
-			cursor.execute(f"SELECT id, popularity FROM {config.table_person}")
-			db_persons = cursor.fetchall()
-			db_persons_with_popularity = {item[0]: item[1] for item in db_persons}
-			return db_persons_with_popularity
+			cursor.execute(f"SELECT id FROM {config.table_person}")
+			return {item[0] for item in cursor}
 	except Exception as e:
 		raise ValueError(f"Failed to get database persons: {e}")
 	finally:
@@ -50,7 +39,7 @@ def get_tmdb_persons_changed(config: PersonConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed persons: {e}")
 
-@task(cache_policy=None)
+@task(cache_policy=None, log_prints=False)
 def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 	try:
 		# Get persons details from TMDB in the default language and the extra languages
@@ -105,7 +94,6 @@ def process_missing_persons(config: PersonConfig):
 						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=person_details))
 						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=person_details))
 				
-				# submits.append(config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv))
 				config.logger.info(f"Push persons to the database...")
 				push_future = config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv)
 				push_future.result(raise_on_failure=True)
@@ -126,9 +114,16 @@ def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 
 		# Get the list of person from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_persons_set, tmdb_persons_popularity = get_tmdb_persons(config)
-		db_persons_with_popularity = get_db_persons(config)
-		db_persons_set = set(db_persons_with_popularity.keys())
+		tmdb_persons_df = config.tmdb_client.get_export_ids(type="person", date=config.date)
+		tmdb_persons_set = set(tmdb_persons_df["id"])
+		if update_popularity and 'popularity' in tmdb_persons_df.columns:
+			tmdb_persons_popularity = tmdb_persons_df.set_index('id')['popularity'].to_dict()
+		else:
+			tmdb_persons_popularity = {}
+		db_persons_set = get_db_persons(config)
+
+		del tmdb_persons_df
+		gc.collect()
 
 		# Compare the persons and process missing persons
 		config.extra_persons = db_persons_set - tmdb_persons_set
@@ -144,14 +139,10 @@ def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 
 		if update_popularity:
 			config.log_manager.updating_popularity()
-			popularity_to_update = {
-				person_id: popularity for person_id, popularity in tmdb_persons_popularity.items()
-				if person_id not in db_persons_with_popularity or db_persons_with_popularity[person_id] != popularity
-			}
 			config.update_popularity(
-				popularity_data=popularity_to_update,
+				tmdb_popularity_data=tmdb_persons_popularity,
 				table_name=config.table_person,
-				content_type="person",
+				content_type=config.flow_name,
 			)
 		
 		config.log_manager.success()

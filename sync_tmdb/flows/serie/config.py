@@ -187,7 +187,6 @@ class SerieConfig(Config):
 	def push(self, csv: dict[str, CSVFile]):
 		"""Push the series to the database"""
 		conn = self.db_client.get_connection()
-		self.logger.info(f"Connections: {self.db_client.nb_open_connections} open, {self.db_client.nb_close_connections} close")
 		try:
 			# Clean duplicates from the CSV files
 			csv["serie"].clean_duplicates(conflict_columns=self.serie_on_conflict)
