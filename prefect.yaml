@@ -4,7 +4,7 @@
 
 # Generic metadata about this project
 name: db-sync
-prefect-version: 3.0.3
+prefect-version: 3.4.12
 
 # build section allows you to manage and build docker images
 build:
@@ -23,10 +23,36 @@ pull:
 #     directory: "{{ db-sync.directory }}" # `db-sync` is a user-provided `id` field
 #     requirements_file: requirements.txt
 
+x-job-variables: &job_variables
+  env:
+    EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-- name: sync_tmdb
+# - name: sync_tmdb
+#   version: 1.0.0
+#   tags:
+#   - tmdb
+#   description: Sync TMDB data
+#   schedules:
+#   - cron: 0 12 * * *
+#     timezone: Europe/Paris
+#     day_or: true
+#     active: true
+#     max_active_runs:
+#     catchup: false
+#   entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
+#   parameters: {}
+#   work_pool:
+#     name: worker_1
+#     job_variables:
+#       <<: *job_variables
+#     work_queue_name:
+#   concurrency_limit:
+#   enforce_parameter_schema: true
+
+- name: sync_tmdb_orchestrator
   version: 1.0.0
   tags:
   - tmdb
@@ -38,30 +64,124 @@ deployments:
     active: true
     max_active_runs:
     catchup: false
-  entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
+  entrypoint: sync_tmdb/sync_tmdb_orchestrator.py:sync_tmdb_orchestrator
   parameters: {}
   work_pool:
     name: worker_1
     job_variables:
-      env:
-        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+      <<: *job_variables
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
 
-- name: sync_tmdb_movie
+- name: sync_tmdb_language
   version: 1.0.0
   tags:
   - tmdb
-  description: Sync TMDB movie data
+  description: Sync TMDB language data
   schedules: []
-  entrypoint: sync_tmdb/flows/movie/sync_tmdb_movie.py:sync_tmdb_movie
+  entrypoint: sync_tmdb/flows/language/sync_tmdb_language.py:sync_tmdb_language
   parameters: {}
   work_pool:
     name: worker_1
     job_variables:
-      env:
-        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_country
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB country data
+  schedules: []
+  entrypoint: sync_tmdb/flows/country/sync_tmdb_country.py:sync_tmdb_country
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true 
+
+- name: sync_tmdb_genre
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB genre data
+  schedules: []
+  entrypoint: sync_tmdb/flows/genre/sync_tmdb_genre.py:sync_tmdb_genre
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_keyword
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB keyword data
+  schedules: []
+  entrypoint: sync_tmdb/flows/keyword/sync_tmdb_keyword.py:sync_tmdb_keyword
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_collection
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB collection data
+  schedules: []
+  entrypoint: sync_tmdb/flows/collection/sync_tmdb_collection.py:sync_tmdb_collection
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_company
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB company data
+  schedules: []
+  entrypoint: sync_tmdb/flows/company/sync_tmdb_company.py:sync_tmdb_company
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_network
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB network data
+  schedules: []
+  entrypoint: sync_tmdb/flows/network/sync_tmdb_network.py:sync_tmdb_network
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
@@ -77,8 +197,39 @@ deployments:
   work_pool:
     name: worker_1
     job_variables:
-      env:
-        EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_movie
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB movie data
+  schedules: []
+  entrypoint: sync_tmdb/flows/movie/sync_tmdb_movie.py:sync_tmdb_movie
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
+- name: sync_tmdb_serie
+  version: 1.0.0
+  tags:
+  - tmdb
+  description: Sync TMDB series data
+  schedules: []
+  entrypoint: sync_tmdb/flows/serie/sync_tmdb_serie.py:sync_tmdb_serie
+  parameters: {}
+  work_pool:
+    name: worker_1
+    job_variables:
+      <<: *job_variables
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
