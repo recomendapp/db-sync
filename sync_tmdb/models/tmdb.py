@@ -45,30 +45,48 @@ class TMDBClient:
 			raise ValueError(f"Failed to get data from TMDB: {data}")
 		return data
 
-	@task(cache_policy=None, cache_result_in_memory=False, persist_result=False)
-	def get_export_ids(self, type: str, date: date) -> pd.DataFrame:
+	@task(cache_policy=None)
+	def get_export_ids(self, type: str, date: date, columns_to_keep: list = ['id', 'popularity']) -> pd.DataFrame:
+		"""
+		Downloads, reads, and filters a TMDB export file efficiently.
+		- Reads the file in chunks to avoid loading everything into memory.
+		- Keeps only the 'id' and 'popularity' columns.
+		- Downcasts data types to further reduce memory usage.
+		"""
+		file = None
 		try:
 			tmdb_export_collection_url_template = "http://files.tmdb.org/p/exports/{type}_ids_{date}.json.gz"
 			url = tmdb_export_collection_url_template.format(type=type, date=date.strftime("%m_%d_%Y"))
 
+			self.logger.info(f"Downloading and processing {url}...")
 			file = download_file(url=url, tmp_directory=".tmp", prefix=f"{type}_ids_{date}")
 			file = decompress_file(file)
 
-			df = pd.read_json(file, lines=True)
-
-			if os.path.exists(file):
-				os.remove(file)
+			chunk_iterator = pd.read_json(file, lines=True, chunksize=100000)
 			
+			processed_chunks = []
+			
+			for chunk in chunk_iterator:
+				existing_columns = [col for col in columns_to_keep if col in chunk.columns]
+				processed_chunks.append(chunk[existing_columns])
+	
+			df = pd.concat(processed_chunks, ignore_index=True)
+			self.logger.info(f"Successfully loaded {len(df)} records with relevant columns.")
+
 			if len(df) == 0:
 				raise ValueError(f"No export ids found for {type} on {date}")
 
+			df['id'] = pd.to_numeric(df['id'], downcast='integer')
+			if 'popularity' in df.columns:
+				df['popularity'] = pd.to_numeric(df['popularity'], downcast='float')
+				
 			return df
 
 		except Exception as e:
-			# Pensez à supprimer le fichier même en cas d'erreur
-			if 'file' in locals() and os.path.exists(file):
-				os.remove(file)
 			raise ValueError(f"Failed to get export ids: {e}")
+		finally:
+			if file and os.path.exists(file):
+				os.remove(file)
 	
 	@task(cache_policy=None, log_prints=False)
 	def get_changed_ids(self, type: str, start_date: date, end_date: date) -> set:
