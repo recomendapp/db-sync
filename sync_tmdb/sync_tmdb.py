@@ -5,7 +5,6 @@
 from datetime import date
 import os
 import shutil
-from memory_profiler import profile
 
 # ---------------------------------- Prefect --------------------------------- #
 
@@ -17,7 +16,6 @@ from . import flows
 # ---------------------------------------------------------------------------- #
 
 @flow(name="sync_tmdb", log_prints=True)
-@profile
 def sync_tmdb(current_date: date = date.today()):
 	logger = get_run_logger()
 	logger.info(f"Starting synchronization with TMDb for {current_date}...")
