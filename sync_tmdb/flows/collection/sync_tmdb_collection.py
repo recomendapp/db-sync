@@ -99,7 +99,7 @@ def sync_tmdb_collection(date: date = date.today()):
 
 		# Get the list of collection from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_collections_df = config.tmdb_client.get_export_ids(type="collection", date=config.date)
+		tmdb_collections_df = config.tmdb_client.get_export_ids(type="collection", date=config.date, columns_to_keep=["id"])
 		tmdb_collections_set = set(tmdb_collections_df["id"])
 		del tmdb_collections_df
 		gc.collect()

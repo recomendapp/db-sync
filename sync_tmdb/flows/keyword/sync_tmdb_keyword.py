@@ -98,7 +98,7 @@ def sync_tmdb_keyword(date: date = date.today()):
 
 		# Get the list of keyword from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_keywords_df = config.tmdb_client.get_export_ids(type="keyword", date=config.date)
+		tmdb_keywords_df = config.tmdb_client.get_export_ids(type="keyword", date=config.date, columns_to_keep=["id", "name"])
 		tmdb_keywords_set = set(tmdb_keywords_df["id"])
 		db_keywords_set = get_db_keywords(config)
 		config.log_manager.data_fetched()

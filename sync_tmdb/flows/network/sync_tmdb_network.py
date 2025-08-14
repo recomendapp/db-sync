@@ -93,7 +93,7 @@ def sync_tmdb_network(date: date = date.today()):
 
 		# Get the list of networks from TMDB and the database
 		config.log_manager.fetching_data()
-		tmdb_networks_df = config.tmdb_client.get_export_ids(type="tv_network", date=config.date)
+		tmdb_networks_df = config.tmdb_client.get_export_ids(type="tv_network", date=config.date, columns_to_keep=["id"])
 		tmdb_networks_set = set(tmdb_networks_df["id"])
 		del tmdb_networks_df
 		gc.collect()
