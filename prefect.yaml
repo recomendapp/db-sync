@@ -219,17 +219,17 @@ deployments:
 #   enforce_parameter_schema: true
 
 # - name: sync_tmdb_serie
-  version: 1.0.0
-  tags:
-  - tmdb
-  description: Sync TMDB series data
-  schedules: []
-  entrypoint: sync_tmdb/flows/serie/sync_tmdb_serie.py:sync_tmdb_serie
-  parameters: {}
-  work_pool:
-    name: worker_1
-    job_variables:
-      <<: *job_variables
-    work_queue_name:
-  concurrency_limit:
-  enforce_parameter_schema: true
+  # version: 1.0.0
+  # tags:
+  # - tmdb
+  # description: Sync TMDB series data
+  # schedules: []
+  # entrypoint: sync_tmdb/flows/serie/sync_tmdb_serie.py:sync_tmdb_serie
+  # parameters: {}
+  # work_pool:
+  #   name: worker_1
+  #   job_variables:
+  #     <<: *job_variables
+  #   work_queue_name:
+  # concurrency_limit:
+  # enforce_parameter_schema: true
