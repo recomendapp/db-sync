@@ -142,6 +142,8 @@ def process_missing_movies(config: MovieConfig):
 					prefix=f"{config.flow_name}_videos"
 				)
 
+				typesense_documents = []
+
 				movies_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
 				movies_details_results = []
 				for movie_details_response in movies_details_futures:
@@ -165,10 +167,19 @@ def process_missing_movies(config: MovieConfig):
 						csv["movie_translations"].append(rows_data=Mapper.movie_translations(config=config,movie=movie_details))
 						csv["movie_videos"].append(rows_data=Mapper.movie_videos(config=config,movie=movie_details))
 
+						# Mapper Typesense
+						typesense_documents.append(Mapper.typesense(config=config,movie=movie_details))
+
 				config.logger.info(f"Pushing movies to the database...")
 				push_future = config.push.submit(csv=csv)
 				push_future.result(raise_on_failure=True)
 				config.logger.info(f"Successfully pushed movies to the database")
+
+				# Push to Typesense
+				if typesense_documents:
+					config.logger.info("Upserting movies to Typesense...")
+					config.typesense_client.upsert_documents("movies", typesense_documents)
+					config.logger.info("Successfully upserted movies to Typesense")
 
 	except Exception as e:
 		raise ValueError(f"Failed to process missing movies: {e}")

@@ -83,6 +83,8 @@ def process_missing_persons(config: PersonConfig):
 					prefix=f"{config.flow_name}_also_known_as"
 				)
 
+				typesense_documents = []
+
 				persons_details_futures = get_tmdb_person_details.map(config=config, person_id=chunk)
 
 				for person_details_response in persons_details_futures:
@@ -93,11 +95,20 @@ def process_missing_persons(config: PersonConfig):
 						person_image_csv.append(rows_data=Mapper.person_image(person=person_details))
 						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=person_details))
 						person_also_known_as_csv.append(rows_data=Mapper.person_also_known_as(person=person_details))
+
+						# Mapper Typesense
+						typesense_documents.append(Mapper.typesense(person=person_details))
 				
 				config.logger.info(f"Push persons to the database...")
 				push_future = config.push.submit(person_csv=person_csv, person_translation_csv=person_translation_csv, person_image_csv=person_image_csv, person_external_id_csv=person_external_id_csv, person_also_known_as_csv=person_also_known_as_csv)
 				push_future.result(raise_on_failure=True)
 				config.logger.info(f"Succesfully submitted persons to the database")
+
+				# Push to Typesense
+				if typesense_documents:
+					config.logger.info("Upserting persons to Typesense...")
+					config.typesense_client.upsert_documents("persons", typesense_documents)
+					config.logger.info("Succesfully upserted persons to Typesense")
 
 	except Exception as e:
 		raise ValueError(f"Failed to process missing persons: {e}")

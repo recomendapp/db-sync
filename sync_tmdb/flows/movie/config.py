@@ -122,7 +122,8 @@ class MovieConfig(Config):
 			raise ValueError(f"Failed to get the data from the database: {e}")
 	@task(cache_policy=None)
 	def prune(self):
-		"""Prune the extra movies from the database"""
+		"""Prune the extra movies from the database and Typesense"""
+		# DB
 		conn = self.db_client.get_connection()
 		try:
 			if len(self.extra_movies) > 0:
@@ -138,6 +139,15 @@ class MovieConfig(Config):
 			raise ValueError(f"Failed to prune extra movies: {e}")
 		finally:
 			self.db_client.return_connection(conn)
+
+		# Typesense
+		try:
+			self.typesense_client.delete_documents(
+				collection="movies",
+				ids=list(self.extra_movies)
+			)
+		except Exception as e:
+			raise ValueError(f"Failed to prune extra movies from Typesense: {e}")
 
 	@task(cache_policy=None)
 	def push(self, csv: dict[str, CSVFile]):

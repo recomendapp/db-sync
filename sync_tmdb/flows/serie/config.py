@@ -166,7 +166,8 @@ class SerieConfig(Config):
 			raise ValueError(f"Failed to get the data from the database: {e}")
 	@task(cache_policy=None)
 	def prune(self):
-		"""Prune the extra series from the database"""
+		"""Prune the extra series from the database and Typesense"""
+		# DB
 		conn = self.db_client.get_connection()
 		try:
 			if len(self.extra_series) > 0:
@@ -182,6 +183,15 @@ class SerieConfig(Config):
 			raise ValueError(f"Failed to prune extra series: {e}")
 		finally:
 			self.db_client.return_connection(conn)
+
+		# Typesense
+		try:
+			self.typesense_client.delete_documents(
+				collection="tv_series",
+				ids=list(self.extra_series)
+			)
+		except Exception as e:
+			raise ValueError(f"Failed to prune extra series from Typesense: {e}")
 
 	@task(cache_policy=None)
 	def push(self, csv: dict[str, CSVFile]):

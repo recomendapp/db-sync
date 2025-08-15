@@ -1,5 +1,6 @@
 from datetime import date
 from .db_client import DBClient
+from .typesense_client import TypesenseClient
 from .language import Language
 from .extra_languages import ExtraLanguages
 from .tmdb import TMDBClient
@@ -8,7 +9,6 @@ from .csv_file import CSVFile
 from prefect.variables import Variable
 from prefect.logging import get_run_logger
 from prefect import task
-import psycopg2.extras
 import pandas as pd
 import gc
 
@@ -21,6 +21,7 @@ class Config:
 		self.default_language = Language(name="English", code="en-US", tmdb_language="en-US")
 		self.extra_languages = ExtraLanguages(languages=self.config.get("extra_languages", []))
 		self.db_client = DBClient()
+		self.typesense_client = TypesenseClient()
 		self.tmdb_client = TMDBClient(config=self.config)
 		self.log_manager = SyncLogsManager(config=self)
 		self.chunk_size = self.config.get("chunk_size", 1000)

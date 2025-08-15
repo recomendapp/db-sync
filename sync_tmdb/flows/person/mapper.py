@@ -85,4 +85,23 @@ class Mapper:
 
 		return pd.DataFrame(person_also_known_as_data)
 
-	
+	@staticmethod
+	def typesense(person: dict) -> dict:
+		also_known_as_list = person.get("also_known_as", [])
+		all_names_set = set(also_known_as_list)
+		name = person.get("name")
+		if name and name.strip():
+			all_names_set.add(name.strip())
+		
+		also_known_as_final = list(all_names_set)
+		doc = {
+			"id": str(person["id"]),
+			"name": name or "",
+			"also_known_as": also_known_as_final,
+			"popularity": float(person.get("popularity", 0.0)),
+		}
+		known_for_department = person.get("known_for_department")
+		if known_for_department:
+			doc["known_for_department"] = known_for_department
+			
+		return doc

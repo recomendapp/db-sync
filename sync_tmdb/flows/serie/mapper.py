@@ -443,3 +443,48 @@ class Mapper:
 						)
 					
 		return pd.DataFrame(serie_season_episode_credits_data)
+	
+	@staticmethod
+	def typesense(config: Config, serie: dict) -> dict:
+		translated_names = [
+			translation["data"].get("name", "")
+			for translation in serie.get("translations", {}).get("translations", [])
+			if translation["data"].get("name") and translation["data"].get("name").strip()
+		]
+
+		names_set = set(translated_names)
+		
+		original_name = serie.get("original_name")
+		if original_name and original_name.strip():
+			names_set.add(original_name.strip())
+
+		names_list = list(names_set)
+
+		genre_ids = [genre["id"] for genre in serie.get("genres", [])]
+		
+		doc = {
+			"id": str(serie["id"]),
+			"original_name": original_name or "",
+			"names": names_list,
+			"popularity": float(serie.get("popularity", 0.0)),
+			"genre_ids": genre_ids,
+		}
+
+		if "number_of_episodes" in serie:
+			doc["number_of_episodes"] = int(serie["number_of_episodes"])
+		if "number_of_seasons" in serie:
+			doc["number_of_seasons"] = int(serie["number_of_seasons"])
+		if "vote_average" in serie:
+			doc["vote_average"] = float(serie["vote_average"])
+		if "vote_count" in serie:
+			doc["vote_count"] = int(serie["vote_count"])
+		if serie.get("status"):
+			doc["status"] = serie["status"]
+		if serie.get("type"):
+			doc["type"] = serie["type"]
+		if serie.get("first_air_date"):
+			doc["first_air_date"] = int(pd.to_datetime(serie["first_air_date"]).timestamp())
+		if serie.get("last_air_date"):
+			doc["last_air_date"] = int(pd.to_datetime(serie["last_air_date"]).timestamp())
+
+		return doc

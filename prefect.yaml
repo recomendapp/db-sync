@@ -25,7 +25,7 @@ pull:
 
 x-job-variables: &job_variables
   env:
-    EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas
+    EXTRA_PIP_PACKAGES: more_itertools psycopg2-binary pandas typesense
 
 
 # the deployments section allows you to provide configuration for deploying flows

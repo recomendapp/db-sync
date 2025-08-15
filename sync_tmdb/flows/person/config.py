@@ -44,7 +44,8 @@ class PersonConfig(Config):
 
 	@task(cache_policy=None)
 	def prune(self):
-		"""Prune the extra persons from the database"""
+		"""Prune the extra persons from the database and Typesense"""
+		# DB
 		conn = self.db_client.get_connection()
 		try:
 			if len(self.extra_persons) > 0:
@@ -60,6 +61,17 @@ class PersonConfig(Config):
 			raise ValueError(f"Failed to prune extra persons: {e}")
 		finally:
 			self.db_client.return_connection(conn)
+		
+		# Typesense
+		try:
+			self.logger.info(f"Pruning {len(self.extra_persons)} extra persons from Typesense...")
+			self.typesense_client.delete_documents(
+				collection="persons",
+				ids=list(self.extra_persons)
+			)
+		except Exception as e:
+			raise ValueError(f"Failed to prune extra persons from Typesense: {e}")
+
 
 	@task(cache_policy=None)
 	def push(self, person_csv: CSVFile, person_translation_csv: CSVFile, person_image_csv: CSVFile, person_external_id_csv: CSVFile, person_also_known_as_csv: CSVFile):

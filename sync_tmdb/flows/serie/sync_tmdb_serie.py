@@ -203,6 +203,8 @@ def process_missing_series(config: SerieConfig):
 					prefix=f"{config.flow_name}_episode_credits"
 				)
 
+				typesense_documents = []
+
 				series_details_futures = get_tmdb_serie_details.map(config=config, serie_id=chunk)
 				for serie_details_response in series_details_futures:
 					serie_details = serie_details_response.result()
@@ -233,12 +235,20 @@ def process_missing_series(config: SerieConfig):
 						csv["serie_episode"].append(rows_data=Mapper.serie_episode(config=config,serie=serie_details))
 						csv["serie_episode_credits"].append(rows_data=Mapper.serie_episode_credits(config=config,serie=serie_details))
 
+						# Typesense documents
+						typesense_documents.append(Mapper.typesense(config=config,serie=serie_details))
 
 				config.logger.info(f"Pushing series to the database...")
 				push_future = config.push.submit(csv=csv)
 				push_future.result(raise_on_failure=True)
 				config.logger.info(f"Successfully pushed series to the database")
-			
+
+				# Push to Typesense
+				if typesense_documents:
+					config.logger.info(f"Pushing series to Typesense...")
+					config.typesense_client.upsert_documents("tv_series", documents=typesense_documents)
+					config.logger.info(f"Successfully pushed series to Typesense")
+
 	except Exception as e:
 		raise ValueError(f"Failed to process missing series: {e}")
 	
