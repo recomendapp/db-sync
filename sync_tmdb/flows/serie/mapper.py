@@ -470,21 +470,34 @@ class Mapper:
 			"genre_ids": genre_ids,
 		}
 
-		if "number_of_episodes" in serie:
-			doc["number_of_episodes"] = int(serie["number_of_episodes"])
-		if "number_of_seasons" in serie:
-			doc["number_of_seasons"] = int(serie["number_of_seasons"])
-		if "vote_average" in serie:
-			doc["vote_average"] = float(serie["vote_average"])
-		if "vote_count" in serie:
-			doc["vote_count"] = int(serie["vote_count"])
+		number_of_episodes = serie.get("number_of_episodes")
+		if number_of_episodes is not None:
+			doc["number_of_episodes"] = int(number_of_episodes)
+			
+		number_of_seasons = serie.get("number_of_seasons")
+		if number_of_seasons is not None:
+			doc["number_of_seasons"] = int(number_of_seasons)
+
+		vote_average = serie.get("vote_average")
+		if vote_average is not None:
+			doc["vote_average"] = float(vote_average)
+
+		vote_count = serie.get("vote_count")
+		if vote_count is not None:
+			doc["vote_count"] = int(vote_count)
+
 		if serie.get("status"):
 			doc["status"] = serie["status"]
+			
 		if serie.get("type"):
 			doc["type"] = serie["type"]
-		if serie.get("first_air_date"):
-			doc["first_air_date"] = int(pd.to_datetime(serie["first_air_date"]).timestamp())
-		if serie.get("last_air_date"):
-			doc["last_air_date"] = int(pd.to_datetime(serie["last_air_date"]).timestamp())
+			
+		first_air_date = serie.get("first_air_date")
+		if first_air_date:
+			doc["first_air_date"] = int(pd.to_datetime(first_air_date).timestamp())
+			
+		last_air_date = serie.get("last_air_date")
+		if last_air_date:
+			doc["last_air_date"] = int(pd.to_datetime(last_air_date).timestamp())
 
 		return doc
