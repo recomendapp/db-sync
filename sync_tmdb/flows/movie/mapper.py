@@ -280,10 +280,11 @@ class Mapper:
 	def typesense(config: Config, movie: dict) -> dict:
 		original_title = movie.get("original_title")
 		translated_titles = [
-			t["data"]["title"]
+			str(t.get("data", {}).get("title") or "").strip()
 			for t in movie.get("translations", {}).get("translations", [])
-			if t["data"].get("title", "").strip()
+			if t.get("data") and t["data"].get("title")
 		]
+
 
 		all_titles_set = set(translated_titles)
 		if original_title and original_title.strip():
