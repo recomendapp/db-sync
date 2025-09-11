@@ -35,4 +35,4 @@ def sync_tmdb(current_date: date = date.today()):
 		logger.error(f"Syncing with TMDb failed: {e}")
 		if os.path.exists(".tmp"):
 			shutil.rmtree(".tmp")
-		exit(1)
+		raise
