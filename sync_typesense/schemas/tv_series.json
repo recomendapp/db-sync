@@ -1,0 +1,19 @@
+{
+  "name": "tv_series",
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "original_name", "type": "string", "sort": true },
+    { "name": "names", "type": "string[]" },
+    { "name": "popularity", "type": "float", "sort": true },
+    { "name": "first_air_date", "type": "int64", "facet": true, "sort": true, "optional": true },
+    { "name": "last_air_date", "type": "int64", "facet": true, "sort": true, "optional": true },
+    { "name": "number_of_episodes", "type": "int32", "optional": true },
+    { "name": "number_of_seasons", "type": "int32", "optional": true },
+    { "name": "vote_average", "type": "float", "sort": true, "optional": true },
+    { "name": "vote_count", "type": "int32", "optional": true },
+    { "name": "status", "type": "string", "facet": true, "optional": true },
+    { "name": "type", "type": "string", "facet": true, "optional": true },
+    { "name": "genre_ids", "type": "int32[]", "facet": true }
+  ],
+  "default_sorting_field": "popularity"
+}

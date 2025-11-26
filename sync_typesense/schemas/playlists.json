@@ -1,0 +1,33 @@
+{
+  "name": "playlists",
+  "fields": [
+    { "name": "id", "type": "int64" },
+    { "name": "title", "type": "string" },
+    { "name": "description", "type": "string", "optional": true },
+    { "name": "likes_count", "type": "int64", "sort": true },
+    { "name": "items_count", "type": "int64", "sort": true },
+    { "name": "created_at", "type": "int64", "sort": true },
+    { "name": "updated_at", "type": "int64", "sort": true },
+    {
+      "name": "is_private",
+      "type": "bool",
+      "facet": true
+    },
+    {
+      "name": "owner_id",
+      "type": "string",
+      "facet": true
+    },
+    {
+      "name": "guest_ids",
+      "type": "string[]",
+      "facet": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "facet": true
+    }
+  ],
+  "default_sorting_field": "likes_count"
+}

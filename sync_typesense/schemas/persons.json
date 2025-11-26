@@ -1,0 +1,30 @@
+{
+	"name": "persons",
+	"fields": [
+		{
+			"name": "id",
+			"type": "string"
+		},
+		{
+			"name": "name",
+			"type": "string"
+		},
+		{
+			"name": "also_known_as",
+			"type": "string[]",
+			"locale": ""
+		},
+		{
+			"name": "popularity",
+			"type": "float",
+			"sort": true
+		},
+		{
+			"name": "known_for_department",
+			"type": "string",
+			"facet": true,
+			"optional": true
+		}
+	],
+	"default_sorting_field": "popularity"
+}

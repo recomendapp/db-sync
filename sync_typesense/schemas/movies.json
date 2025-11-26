@@ -1,0 +1,42 @@
+{
+	"name": "movies",
+	"fields": [
+		{
+			"name": "id",
+			"type": "string"
+		},
+		{
+			"name": "original_title",
+			"type": "string",
+			"sort": true
+		},
+		{
+			"name": "titles",
+			"type": "string[]",
+			"locale": ""
+		},
+		{
+			"name": "popularity",
+			"type": "float",
+			"sort": true
+		},
+		{
+			"name": "runtime",
+			"type": "int32",
+			"optional": true
+		},
+		{
+		"name": "release_date",
+		"type": "int64",
+		"facet": true,
+		"sort": true,
+		"optional": true
+		},
+		{
+			"name": "genre_ids",
+			"type": "int32[]",
+			"facet": true
+		}
+	],
+	"default_sorting_field": "popularity"
+}

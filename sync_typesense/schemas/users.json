@@ -1,0 +1,23 @@
+{
+  "name": "users",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string"
+    },
+    {
+      "name": "username",
+      "type": "string"
+    },
+    {
+      "name": "full_name",
+      "type": "string"
+    },
+    {
+      "name": "followers_count",
+      "type": "int64",
+      "sort": true
+    }
+  ],
+  "default_sorting_field": "followers_count"
+}

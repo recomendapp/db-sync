@@ -1,0 +1,1 @@
+from .sync_typesense_movies import sync_typesense_movies
