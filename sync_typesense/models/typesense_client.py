@@ -17,7 +17,7 @@ class TypesenseClient:
 				}
 			],
 			"api_key": self.api_key,
-			"connection_timeout_seconds": 2
+			"connection_timeout_seconds": 120
 		})
 
 	def upsert_documents(self, collection: str, documents: list[dict]):

@@ -19,9 +19,6 @@ pull:
     repository: https://github.com/recomendapp/db-sync.git
     branch: main
     credentials: '{{ prefect.blocks.github-credentials.github-credentials }}'
-# - prefect.deployments.steps.pip_install_requirements:
-#     directory: "{{ db-sync.directory }}" # `db-sync` is a user-provided `id` field
-#     requirements_file: requirements.txt
 
 x-job-variables: &job_variables
   env:
@@ -40,196 +37,36 @@ deployments:
     timezone: Europe/Paris
     day_or: true
     active: true
-    max_active_runs:
     catchup: false
   entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
   parameters: {}
   work_pool:
-    name: worker_1
+    name: kube
     job_variables:
       <<: *job_variables
+      memory_request: "6Gi"
+      cpu_request: "2"
+      memory_limit: "8Gi"
+      cpu_limit: "4"
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
 
-# - name: sync_tmdb_orchestrator
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB data
-#   schedules:
-#   - cron: 0 12 * * *
-#     timezone: Europe/Paris
-#     day_or: true
-#     active: true
-#     max_active_runs:
-#     catchup: false
-#   entrypoint: sync_tmdb/sync_tmdb_orchestrator.py:sync_tmdb_orchestrator
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_language
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB language data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/language/sync_tmdb_language.py:sync_tmdb_language
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_country
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB country data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/country/sync_tmdb_country.py:sync_tmdb_country
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true 
-
-# - name: sync_tmdb_genre
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB genre data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/genre/sync_tmdb_genre.py:sync_tmdb_genre
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_keyword
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB keyword data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/keyword/sync_tmdb_keyword.py:sync_tmdb_keyword
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_collection
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB collection data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/collection/sync_tmdb_collection.py:sync_tmdb_collection
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_company
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB company data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/company/sync_tmdb_company.py:sync_tmdb_company
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_network
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB network data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/network/sync_tmdb_network.py:sync_tmdb_network
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_person
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB person data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/person/sync_tmdb_person.py:sync_tmdb_person
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_movie
-#   version: 1.0.0
-#   tags:
-#   - tmdb
-#   description: Sync TMDB movie data
-#   schedules: []
-#   entrypoint: sync_tmdb/flows/movie/sync_tmdb_movie.py:sync_tmdb_movie
-#   parameters: {}
-#   work_pool:
-#     name: worker_1
-#     job_variables:
-#       <<: *job_variables
-#     work_queue_name:
-#   concurrency_limit:
-#   enforce_parameter_schema: true
-
-# - name: sync_tmdb_serie
-  # version: 1.0.0
-  # tags:
-  # - tmdb
-  # description: Sync TMDB series data
-  # schedules: []
-  # entrypoint: sync_tmdb/flows/serie/sync_tmdb_serie.py:sync_tmdb_serie
-  # parameters: {}
-  # work_pool:
-  #   name: worker_1
-  #   job_variables:
-  #     <<: *job_variables
-  #   work_queue_name:
-  # concurrency_limit:
-  # enforce_parameter_schema: true
+- name: sync_typesense
+  version: 1.0.0
+  tags:
+  - typesense
+  description: Sync all Typesense collections (movies, tv_series, persons, playlists, users)
+  entrypoint: sync_typesense/sync_typesense.py:sync_typesense
+  parameters: {}
+  work_pool:
+    name: kube
+    job_variables:
+      <<: *job_variables
+      memory_request: "4Gi"
+      cpu_request: "2"
+      memory_limit: "6Gi"
+      cpu_limit: "4"
+  work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true

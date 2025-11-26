@@ -1,7 +1,7 @@
 {
   "name": "playlists",
   "fields": [
-    { "name": "id", "type": "int64" },
+    { "name": "id", "type": "string" },
     { "name": "title", "type": "string" },
     { "name": "description", "type": "string", "optional": true },
     { "name": "likes_count", "type": "int64", "sort": true },
