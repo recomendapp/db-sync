@@ -9,7 +9,7 @@ from ...models.db_client import DBClient
 from ...models.typesense_client import TypesenseClient
 from .mapper import Mapper
 
-BATCH_SIZE = 50000
+BATCH_SIZE = 10000
 COLLECTION_NAME = "movies"
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / f"{COLLECTION_NAME}.json"
 
