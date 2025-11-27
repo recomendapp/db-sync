@@ -11,7 +11,7 @@ from .mapper import Mapper
 
 BATCH_SIZE = 10000
 COLLECTION_NAME = "tv_series"
-SCHEMA_PATH = Path(__file__).parent.parent / "schemas" / f"{COLLECTION_NAME}.json"
+SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / f"{COLLECTION_NAME}.json"
 
 SQL_QUERY = """
 SELECT
