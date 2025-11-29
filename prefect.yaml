@@ -57,6 +57,7 @@ deployments:
   tags:
   - typesense
   description: Sync all Typesense collections (movies, tv_series, persons, playlists, users)
+  schedules: []
   entrypoint: sync_typesense/sync_typesense.py:sync_typesense
   parameters: {}
   work_pool:
