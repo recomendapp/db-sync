@@ -71,3 +71,29 @@ deployments:
   work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
+
+- name: generate_sitemaps
+  version: 1.0.0
+  tags:
+  - sitemap
+  description: Generate sitemaps
+  schedules:
+  - cron: 0 4 * * *
+    timezone: Europe/Paris
+    day_or: true
+    active: true
+    catchup: false
+  entrypoint: generate_sitemaps/generate_sitemaps.py:generate_sitemaps
+  parameters: {}
+  work_pool:
+    name: kube
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: psycopg2-binary supabase
+      memory_request: "2Gi"
+      cpu_request: "1"
+      memory_limit: "3Gi"
+      cpu_limit: "2"
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
