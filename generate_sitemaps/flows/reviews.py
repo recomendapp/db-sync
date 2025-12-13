@@ -2,7 +2,6 @@ from prefect import flow, task
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 import math
-import json
 
 REVIEW_PER_PAGE = 10000
 

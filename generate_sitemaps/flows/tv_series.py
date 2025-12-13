@@ -2,7 +2,7 @@ from prefect import flow, task
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 from ..utils.slugify import slugify
-from ..utils.locales import SUPPORTED_LOCALES, DEFAULT_LOCALE
+from ..utils.locales import SITEMAP_LOCALES, DEFAULT_LOCALE
 import math
 
 TV_SERIES_PER_PAGE = 10000
@@ -18,6 +18,10 @@ def get_sitemap_media_tv_series_count(config: Config) -> int:
 @task(cache_policy=None)
 def get_sitemap_media_tv_series(config: Config, page: int) -> list:
     offset = page * TV_SERIES_PER_PAGE
+    
+    locales_for_query = [tuple(l.split('-')) for l in SITEMAP_LOCALES]
+    where_locale_clause = " OR ".join([f"(t.iso_639_1 = '{lang}' AND t.iso_3166_1 = '{country}')" for lang, country in locales_for_query])
+
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(f"""
@@ -28,7 +32,7 @@ def get_sitemap_media_tv_series(config: Config, page: int) -> list:
                         (
                             SELECT json_agg(json_build_object('iso_639_1', t.iso_639_1, 'iso_3166_1', t.iso_3166_1, 'name', t.name))
                             FROM tmdb_tv_series_translations t
-                            WHERE t.serie_id = tv.id
+                            WHERE t.serie_id = tv.id AND ({where_locale_clause})
                         ),
                         '[]'::json
                     ) as tmdb_tv_series_translations
@@ -61,12 +65,14 @@ def generate_tv_series_sitemaps():
             translations = {f"{t['iso_639_1']}-{t['iso_3166_1']}": t['name'] for t in translations_json}
 
             default_name = translations.get(DEFAULT_LOCALE, original_name)
-            default_slug_url = f"{serie_id}{f'-{slugify(default_name)}' if default_name else ''}"
+            slug_val = slugify(default_name)
+            default_slug_url = f"{serie_id}{f'-{slug_val}' if slug_val else ''}"
 
             language_urls = {}
-            for locale in SUPPORTED_LOCALES:
+            for locale in SITEMAP_LOCALES:
                 name = translations.get(locale, original_name)
-                slug = f"{serie_id}{f'-{slugify(name)}' if name else ''}"
+                slug_val = slugify(name)
+                slug = f"{serie_id}{f'-{slug_val}' if slug_val else ''}"
                 url = f"{config.site_url}/tv-series/{slug}" if locale == DEFAULT_LOCALE else f"{config.site_url}/{locale}/tv-series/{slug}"
                 language_urls[locale] = url
 

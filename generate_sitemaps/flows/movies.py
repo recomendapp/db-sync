@@ -2,7 +2,7 @@ from prefect import flow, task
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 from ..utils.slugify import slugify
-from ..utils.locales import SUPPORTED_LOCALES, DEFAULT_LOCALE
+from ..utils.locales import SITEMAP_LOCALES, DEFAULT_LOCALE
 import math
 
 MOVIE_PER_PAGE = 10000
@@ -18,6 +18,10 @@ def get_sitemap_media_movie_count(config: Config) -> int:
 @task(cache_policy=None)
 def get_sitemap_media_movies(config: Config, page: int) -> list:
     offset = page * MOVIE_PER_PAGE
+    
+    locales_for_query = [tuple(l.split('-')) for l in SITEMAP_LOCALES]
+    where_locale_clause = " OR ".join([f"(t.iso_639_1 = '{lang}' AND t.iso_3166_1 = '{country}')" for lang, country in locales_for_query])
+
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(f"""
@@ -28,7 +32,7 @@ def get_sitemap_media_movies(config: Config, page: int) -> list:
                         (
                             SELECT json_agg(json_build_object('iso_639_1', t.iso_639_1, 'iso_3166_1', t.iso_3166_1, 'title', t.title))
                             FROM tmdb_movie_translations t
-                            WHERE t.movie_id = m.id
+                            WHERE t.movie_id = m.id AND ({where_locale_clause})
                         ),
                         '[]'::json
                     ) as tmdb_movie_translations
@@ -61,12 +65,14 @@ def generate_movie_sitemaps():
             translations = {f"{t['iso_639_1']}-{t['iso_3166_1']}": t['title'] for t in translations_json}
 
             default_title = translations.get(DEFAULT_LOCALE, original_title)
-            default_slug_url = f"{movie_id}{f'-{slugify(default_title)}' if default_title else ''}"
+            slug_val = slugify(default_title)
+            default_slug_url = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
 
             language_urls = {}
-            for locale in SUPPORTED_LOCALES:
+            for locale in SITEMAP_LOCALES:
                 title = translations.get(locale, original_title)
-                slug = f"{movie_id}{f'-{slugify(title)}' if title else ''}"
+                slug_val = slugify(title)
+                slug = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
                 url = f"{config.site_url}/film/{slug}" if locale == DEFAULT_LOCALE else f"{config.site_url}/{locale}/film/{slug}"
                 language_urls[locale] = url
 
