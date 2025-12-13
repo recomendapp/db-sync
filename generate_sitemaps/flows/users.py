@@ -1,4 +1,6 @@
 from prefect import flow, task
+from prefect.futures import wait
+from prefect.task_runners import ThreadPoolTaskRunner
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 import math
@@ -27,7 +29,26 @@ def get_sitemap_users(config: Config, page: int) -> list:
             """)
             return cursor.fetchall()
 
-@flow(name="generate_user_sitemaps", log_prints=True)
+@task(cache_policy=None)
+def process_sitemap_page(page_index: int):
+    config = Config()
+    logger = config.logger
+    users = get_sitemap_users(config, page_index)
+    sitemap_entries = []
+    for user_data in users:
+        username, created_at = user_data
+        sitemap_entries.append({
+            "url": f"{config.site_url}/@{username}",
+            "lastModified": created_at.isoformat(),
+            "priority": 0.6,
+        })
+    
+    sitemap_xml = build_sitemap(sitemap_entries)
+    gzipped_sitemap = gzip_encode(sitemap_xml)
+    config.storage_client.upload(f"users/{page_index}.xml.gz", gzipped_sitemap)
+    logger.info(f"  - Uploaded users/{page_index}.xml.gz")
+
+@flow(name="generate_user_sitemaps", log_prints=True, task_runner=ThreadPoolTaskRunner(max_workers=5))
 def generate_user_sitemaps():
     config = Config()
     logger = config.logger
@@ -41,20 +62,8 @@ def generate_user_sitemaps():
     config.storage_client.upload("users/index.xml.gz", gzipped_index)
     logger.info("Uploaded users/index.xml.gz")
 
-    for i in range(count):
-        users = get_sitemap_users(config, i)
-        sitemap_entries = []
-        for user_data in users:
-            username, created_at = user_data
-            sitemap_entries.append({
-                "url": f"{config.site_url}/@{username}",
-                "lastModified": created_at.isoformat(),
-                "priority": 0.6,
-            })
-        
-        sitemap_xml = build_sitemap(sitemap_entries)
-        gzipped_sitemap = gzip_encode(sitemap_xml)
-        config.storage_client.upload(f"users/{i}.xml.gz", gzipped_sitemap)
-        logger.info(f"  - Uploaded users/{i}.xml.gz")
+    if count > 0:
+        futures = process_sitemap_page.map(range(count))
+        wait(futures)
 
     logger.info("Finished user sitemaps.")

@@ -1,4 +1,6 @@
 from prefect import flow, task
+from prefect.futures import wait
+from prefect.task_runners import ThreadPoolTaskRunner
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 from ..utils.slugify import slugify
@@ -42,7 +44,43 @@ def get_sitemap_media_movies(config: Config, page: int) -> list:
             """)
             return cursor.fetchall()
 
-@flow(name="generate_movie_sitemaps", log_prints=True)
+@task(cache_policy=None)
+def process_sitemap_page(page_index: int):
+    config = Config()
+    logger = config.logger
+    movies = get_sitemap_media_movies(config, page_index)
+    sitemap_entries = []
+    for movie_data in movies:
+        movie_id, original_title, translations_json = movie_data
+        
+        translations = {f"{t['iso_639_1']}-{t['iso_3166_1']}": t['title'] for t in translations_json}
+
+        default_title = translations.get(DEFAULT_LOCALE, original_title)
+        slug_val = slugify(default_title)
+        default_slug_url = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
+
+        language_urls = {}
+        for locale in SITEMAP_LOCALES:
+            title = translations.get(locale, original_title)
+            slug_val = slugify(title)
+            slug = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
+            url = f"{config.site_url}/film/{slug}" if locale == DEFAULT_LOCALE else f"{config.site_url}/{locale}/film/{slug}"
+            language_urls[locale] = url
+
+        sitemap_entries.append({
+            "url": f"{config.site_url}/film/{default_slug_url}",
+            "priority": 0.8,
+            "alternates": {
+                "languages": language_urls,
+            },
+        })
+
+    sitemap_xml = build_sitemap(sitemap_entries)
+    gzipped_sitemap = gzip_encode(sitemap_xml)
+    config.storage_client.upload(f"movies/{page_index}.xml.gz", gzipped_sitemap)
+    logger.info(f"  - Uploaded movies/{page_index}.xml.gz")
+
+@flow(name="generate_movie_sitemaps", log_prints=True, task_runner=ThreadPoolTaskRunner(max_workers=5))
 def generate_movie_sitemaps():
     config = Config()
     logger = config.logger
@@ -56,37 +94,8 @@ def generate_movie_sitemaps():
     config.storage_client.upload("movies/index.xml.gz", gzipped_index)
     logger.info("Uploaded movies/index.xml.gz")
 
-    for i in range(count):
-        movies = get_sitemap_media_movies(config, i)
-        sitemap_entries = []
-        for movie_data in movies:
-            movie_id, original_title, translations_json = movie_data
-            
-            translations = {f"{t['iso_639_1']}-{t['iso_3166_1']}": t['title'] for t in translations_json}
-
-            default_title = translations.get(DEFAULT_LOCALE, original_title)
-            slug_val = slugify(default_title)
-            default_slug_url = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
-
-            language_urls = {}
-            for locale in SITEMAP_LOCALES:
-                title = translations.get(locale, original_title)
-                slug_val = slugify(title)
-                slug = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
-                url = f"{config.site_url}/film/{slug}" if locale == DEFAULT_LOCALE else f"{config.site_url}/{locale}/film/{slug}"
-                language_urls[locale] = url
-
-            sitemap_entries.append({
-                "url": f"{config.site_url}/film/{default_slug_url}",
-                "priority": 0.8,
-                "alternates": {
-                    "languages": language_urls,
-                },
-            })
-
-        sitemap_xml = build_sitemap(sitemap_entries)
-        gzipped_sitemap = gzip_encode(sitemap_xml)
-        config.storage_client.upload(f"movies/{i}.xml.gz", gzipped_sitemap)
-        logger.info(f"  - Uploaded movies/{i}.xml.gz")
+    if count > 0:
+        futures = process_sitemap_page.map(range(count))
+        wait(futures)
 
     logger.info("Finished movie sitemaps.")
