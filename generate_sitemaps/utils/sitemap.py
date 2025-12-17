@@ -1,8 +1,11 @@
 import gzip
-from typing import List, Dict, TypedDict, Optional
+from datetime import date
+from typing import Dict, List, Optional, TypedDict
+
 
 class Alternate(TypedDict, total=False):
     languages: Dict[str, str]
+
 
 class SitemapEntry(TypedDict, total=False):
     url: str
@@ -11,12 +14,15 @@ class SitemapEntry(TypedDict, total=False):
     priority: Optional[float]
     alternates: Optional[Alternate]
 
+
 def build_sitemap_index(sitemaps: List[str]) -> str:
+    today = date.today().isoformat()
     xml = '<?xml version="1.0" encoding="UTF-8"?>'
     xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
     for sitemap_url in sitemaps:
         xml += "<sitemap>"
         xml += f"<loc>{sitemap_url}</loc>"
+        xml += f"<lastmod>{today}</lastmod>"
         xml += "</sitemap>"
     xml += "</sitemapindex>"
     return xml
