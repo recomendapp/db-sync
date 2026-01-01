@@ -170,6 +170,12 @@ def process_missing_series(config: SerieConfig):
 					tmp_directory=config.tmp_directory,
 					prefix=f"{config.flow_name}_credits"
 				)
+				
+				csv["serie_roles"] = CSVFile(
+					columns=config.serie_roles_columns,
+					tmp_directory=config.tmp_directory,
+					prefix=f"{config.flow_name}_roles"
+				)
 
 				# Seasons
 				csv["serie_season"] = CSVFile(
@@ -224,7 +230,9 @@ def process_missing_series(config: SerieConfig):
 						csv["serie_spoken_languages"].append(rows_data=Mapper.serie_spoken_languages(config=config,serie=serie_details))
 						csv["serie_translations"].append(rows_data=Mapper.serie_translations(config=config,serie=serie_details))
 						csv["serie_videos"].append(rows_data=Mapper.serie_videos(config=config,serie=serie_details))
-						csv["serie_credits"].append(rows_data=Mapper.serie_credits(config=config,serie=serie_details))
+						serie_credits_df, serie_roles_df = Mapper.serie_credits(config=config,serie=serie_details)
+						csv["serie_credits"].append(rows_data=serie_credits_df)
+						csv["serie_roles"].append(rows_data=serie_roles_df)
 
 						# Seasons
 						csv["serie_season"].append(rows_data=Mapper.serie_season(config=config,serie=serie_details))
@@ -299,5 +307,4 @@ def sync_tmdb_serie(date: date = date.today(), update_popularity: bool = True):
 	except Exception as e:
 		config.log_manager.failed()
 		raise ValueError(f"Failed to sync series: {e}")
-
 

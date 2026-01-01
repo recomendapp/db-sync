@@ -264,60 +264,69 @@ class Mapper:
 		return pd.DataFrame(serie_videos_data)
 	
 	@staticmethod
-	def serie_credits(config: Config, serie: dict) -> pd.DataFrame:
+	def serie_credits(config: Config, serie: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
 		serieId = serie["id"]
 		created_by = serie.get("created_by", [])
 		credits = serie.get("aggregate_credits", {})
-		movie_credits_data = []
+		serie_credits_data = []
+		serie_roles_data = []
 
+		# Cast (Actors)
 		for credit in credits.get("cast", []):
 			if credit["id"] in config.db_persons:
 				for role in credit.get("roles", []):
-					movie_credits_data.append(
+					serie_credits_data.append(
 						{
 							"id": role["credit_id"],
 							"serie_id": serieId,
 							"person_id": credit["id"],
 							"department": "Acting",
 							"job": "Actor",
-							"character": role["character"],
-							"episode_count": role["episode_count"]
 						}
 					)
-		
+					# Roles are only for actors
+					serie_roles_data.append(
+						{
+							"credit_id": role["credit_id"],
+							"character": role["character"],
+							"episode_count": role["episode_count"],
+							'"order"': credit.get("order", 0),
+						}
+					)
+
+		# Crew
 		for credit in credits.get("crew", []):
 			if credit["id"] in config.db_persons:
-				for role in credit.get("jobs", []):
-					movie_credits_data.append(
+				for job_info in credit.get("jobs", []):
+					serie_credits_data.append(
 						{
-							"id": role["credit_id"],
+							"id": job_info["credit_id"],
 							"serie_id": serieId,
 							"person_id": credit["id"],
 							"department": credit["department"],
-							"job": role["job"],
-							"character": None,
-							"episode_count": role["episode_count"]
+							"job": job_info["job"],
 						}
 					)
-		
+
+		# Created by
 		for credit in created_by:
-			if credit["id"] in config.db_persons:
-				movie_credits_data.append(
+			if credit.get("id") in config.db_persons:
+				serie_credits_data.append(
 					{
 						"id": credit["credit_id"],
 						"serie_id": serieId,
 						"person_id": credit["id"],
 						"department": "Creator",
 						"job": "Creator",
-						"character": None,
-						"episode_count": None
 					}
 				)
 
-		config.tmp_credit_ids = set([credit["id"] for credit in movie_credits_data])
-		df = pd.DataFrame(movie_credits_data)
-		df = df.convert_dtypes()
-		return df
+		config.tmp_credit_ids = set([c['id'] for c in serie_credits_data])
+		
+		credits_df = pd.DataFrame(serie_credits_data)
+		roles_df = pd.DataFrame(serie_roles_data)
+		
+		return credits_df, roles_df
 	
 	# Seasons
 	@staticmethod

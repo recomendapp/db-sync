@@ -40,6 +40,7 @@ class SerieConfig(Config):
 		self.table_serie_translations: str = self.config.get("db_tables", {}).get("serie_translations", "tmdb_tv_series_translations")
 		self.table_serie_videos: str = self.config.get("db_tables", {}).get("serie_videos", "tmdb_tv_series_videos")
 		self.table_serie_credits: str = self.config.get("db_tables", {}).get("serie_credits", "tmdb_tv_series_credits")
+		self.table_serie_roles: str = self.config.get("db_tables", {}).get("serie_roles", "tmdb_tv_series_roles")
 		
 		# Seasons
 		self.table_serie_season: str = self.config.get("db_tables", {}).get("serie_season", "tmdb_tv_series_seasons")
@@ -79,7 +80,8 @@ class SerieConfig(Config):
 		self.serie_spoken_languages_columns: list[str] = ["serie_id", "iso_639_1"]
 		self.serie_translations_columns: list[str] = ["serie_id", "name", "overview", "homepage", "tagline", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_columns: list[str] = ["id", "serie_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
-		self.serie_credits_columns: list[str] = ["id", "serie_id", "person_id", "department", "job", "character", "episode_count"]
+		self.serie_credits_columns: list[str] = ["id", "serie_id", "person_id", "department", "job"]
+		self.serie_roles_columns: list[str] = ["credit_id", "character", "episode_count", '"order"']
 
 		# Seasons
 		self.serie_season_columns: list[str] = ["id", "serie_id", "season_number", "vote_average", "vote_count", "poster_path"]
@@ -107,6 +109,7 @@ class SerieConfig(Config):
 		self.serie_translations_on_conflict: list[str] = ["serie_id", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_on_conflict: list[str] = ["id"]
 		self.serie_credits_on_conflict: list[str] = ["id"]
+		self.serie_roles_on_conflict: list[str] = ["credit_id"]
 
 		# Seasons
 		self.serie_season_on_conflict: list[str] = ["id"]
@@ -134,6 +137,7 @@ class SerieConfig(Config):
 		self.serie_translations_on_conflict_update: list[str] = [col for col in self.serie_translations_columns if col not in self.serie_translations_on_conflict]
 		self.serie_videos_on_conflict_update: list[str] = [col for col in self.serie_videos_columns if col not in self.serie_videos_on_conflict]
 		self.serie_credits_on_conflict_update: list[str] = [col for col in self.serie_credits_columns if col not in self.serie_credits_on_conflict]
+		self.serie_roles_on_conflict_update: list[str] = [col for col in self.serie_roles_columns if col not in self.serie_roles_on_conflict]
 
 		# Seasons
 		self.serie_season_on_conflict_update: list[str] = [col for col in self.serie_season_columns if col not in self.serie_season_on_conflict]
@@ -215,6 +219,7 @@ class SerieConfig(Config):
 			csv["serie_translations"].clean_duplicates(conflict_columns=self.serie_translations_on_conflict)
 			csv["serie_videos"].clean_duplicates(conflict_columns=self.serie_videos_on_conflict)
 			csv["serie_credits"].clean_duplicates(conflict_columns=self.serie_credits_on_conflict)
+			csv["serie_roles"].clean_duplicates(conflict_columns=self.serie_roles_on_conflict)
 			csv["serie_season"].clean_duplicates(conflict_columns=self.serie_season_on_conflict)
 			csv["serie_season_credits"].clean_duplicates(conflict_columns=self.serie_season_credits_on_conflict)
 			csv["serie_season_translations"].clean_duplicates(conflict_columns=self.serie_season_translations_on_conflict)
@@ -241,6 +246,7 @@ class SerieConfig(Config):
 					temp_serie_translations = f"temp_{self.table_serie_translations}_{uuid.uuid4().hex}"
 					temp_serie_videos = f"temp_{self.table_serie_videos}_{uuid.uuid4().hex}"
 					temp_serie_credits = f"temp_{self.table_serie_credits}_{uuid.uuid4().hex}"
+					temp_serie_roles = f"temp_{self.table_serie_roles}_{uuid.uuid4().hex}"
 					temp_serie_season = f"temp_{self.table_serie_season}_{uuid.uuid4().hex}"
 					temp_serie_season_credits = f"temp_{self.table_serie_season_credits}_{uuid.uuid4().hex}"
 					temp_serie_season_translations = f"temp_{self.table_serie_season_translations}_{uuid.uuid4().hex}"
@@ -264,6 +270,7 @@ class SerieConfig(Config):
 						CREATE TEMP TABLE {temp_serie_translations} (LIKE {self.table_serie_translations} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_serie_videos} (LIKE {self.table_serie_videos} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_serie_credits} (LIKE {self.table_serie_credits} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_serie_roles} (LIKE {self.table_serie_roles} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_serie_season} (LIKE {self.table_serie_season} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_serie_season_credits} (LIKE {self.table_serie_season_credits} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_serie_season_translations} (LIKE {self.table_serie_season_translations} INCLUDING ALL);
@@ -303,6 +310,8 @@ class SerieConfig(Config):
 						cursor.copy_expert(f"COPY {temp_serie_videos} ({','.join(self.serie_videos_columns)}) FROM STDIN WITH CSV HEADER", f)
 					with open(csv["serie_credits"].file_path, "r") as f:
 						cursor.copy_expert(f"COPY {temp_serie_credits} ({','.join(self.serie_credits_columns)}) FROM STDIN WITH CSV HEADER", f)
+					with open(csv["serie_roles"].file_path, "r") as f:
+						cursor.copy_expert(f"COPY {temp_serie_roles} ({','.join(self.serie_roles_columns)}) FROM STDIN WITH CSV HEADER", f)
 					with open(csv["serie_season"].file_path, "r") as f:
 						cursor.copy_expert(f"COPY {temp_serie_season} ({','.join(self.serie_season_columns)}) FROM STDIN WITH CSV HEADER", f)
 					with open(csv["serie_season_credits"].file_path, "r") as f:
@@ -626,6 +635,15 @@ class SerieConfig(Config):
 
 					insert_into(
 						cursor=cursor,
+						table=self.table_serie_roles,
+						temp_table=temp_serie_roles,
+						columns=self.serie_roles_columns,
+						# on_conflict=self.serie_roles_on_conflict,
+						# on_conflict_update=self.serie_roles_on_conflict_update
+					)
+
+					insert_into(
+						cursor=cursor,
 						table=self.table_serie_season,
 						temp_table=temp_serie_season,
 						columns=self.serie_season_columns,
@@ -688,6 +706,7 @@ class SerieConfig(Config):
 					csv["serie_translations"].delete()
 					csv["serie_videos"].delete()
 					csv["serie_credits"].delete()
+					csv["serie_roles"].delete()
 					csv["serie_season"].delete()
 					csv["serie_season_credits"].delete()
 					csv["serie_season_translations"].delete()
