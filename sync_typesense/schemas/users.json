@@ -10,7 +10,7 @@
       "type": "string"
     },
     {
-      "name": "full_name",
+      "name": "name",
       "type": "string"
     },
     {

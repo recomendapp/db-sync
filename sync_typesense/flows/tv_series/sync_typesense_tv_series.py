@@ -28,18 +28,18 @@ SELECT
     first.first_air_ts,
     last.last_air_ts,
     COALESCE(names.names, '{}') AS names
-FROM public.tmdb_tv_series s
+FROM tmdb.tv_series s
 LEFT JOIN LATERAL (
     SELECT ARRAY_REMOVE(ARRAY_AGG(DISTINCT btrim(t.name)), NULL) AS names
-    FROM public.tmdb_tv_series_translations t
-    WHERE t.serie_id = s.id
+    FROM tmdb.tv_series_translation t
+    WHERE t.tv_series_id = s.id
         AND t.name IS NOT NULL
         AND btrim(t.name) <> ''
 ) AS names ON TRUE
 LEFT JOIN LATERAL (
     SELECT ARRAY_AGG(DISTINCT sg.genre_id)::int[] AS genre_ids
-    FROM public.tmdb_tv_series_genres sg
-    WHERE sg.serie_id = s.id
+    FROM tmdb.tv_series_genre sg
+    WHERE sg.tv_series_id = s.id
 ) AS g ON TRUE
 LEFT JOIN LATERAL (
     SELECT EXTRACT(EPOCH FROM s.first_air_date)::bigint AS first_air_ts
