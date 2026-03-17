@@ -7,7 +7,7 @@ class LanguageConfig(Config):
 		self.flow_name: str = "language"
 
 		# Tables
-		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
+		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb.language")
 
 		# Columns
 		self.language_column: str = "iso_639_1"

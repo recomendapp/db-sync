@@ -11,9 +11,9 @@ class CollectionConfig(Config):
 		self.flow_name: str = "collection"
 
 		# Tables
-		self.table_collection: str = self.config.get("db_tables", {}).get("collection", "tmdb_collection")
-		self.table_collection_translation: str = self.config.get("db_tables", {}).get("collection_translation", "tmdb_collection_translation")
-		self.table_collection_image: str = self.config.get("db_tables", {}).get("collection_image", "tmdb_collection_image")
+		self.table_collection: str = self.config.get("db_tables", {}).get("collection", "tmdb.collection")
+		self.table_collection_translation: str = self.config.get("db_tables", {}).get("collection_translation", "tmdb.collection_translation")
+		self.table_collection_image: str = self.config.get("db_tables", {}).get("collection_image", "tmdb.collection_image")
 
 		# Ids
 		self.extra_collections: set = {}
@@ -21,13 +21,13 @@ class CollectionConfig(Config):
 
 		# Columns
 		self.collection_columns: list[str] = ["id", "name"]
-		self.collection_translation_columns: list[str] = ["collection", "title", "overview", "homepage", "iso_639_1", "iso_3166_1"]
-		self.collection_image_columns: list[str] = ["collection", "file_path", "type", "aspect_ratio", "height", "width", "vote_average", "vote_count", "iso_639_1"]
+		self.collection_translation_columns: list[str] = ["collection_id", "title", "overview", "homepage", "iso_639_1", "iso_3166_1"]
+		self.collection_image_columns: list[str] = ["collection_id", "file_path", "type", "aspect_ratio", "height", "width", "vote_average", "vote_count", "iso_639_1"]
 
 		# On conflict
 		self.collection_on_conflict: list[str] = ["id"]
-		self.collection_translation_on_conflict: list[str] = ["collection", "iso_639_1", "iso_3166_1"]
-		self.collection_image_on_conflict: list[str] = ["collection", "file_path", "type"]
+		self.collection_translation_on_conflict: list[str] = ["collection_id", "iso_639_1", "iso_3166_1"]
+		self.collection_image_on_conflict: list[str] = ["collection_id", "file_path", "type"]
 
 		# On conflict update
 		self.collection_on_conflict_update: list[str] = [col for col in self.collection_columns if col not in self.collection_on_conflict]
@@ -68,9 +68,9 @@ class CollectionConfig(Config):
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
-					temp_collection = f"temp_{self.table_collection}_{uuid.uuid4().hex}"
-					temp_collection_translation = f"temp_{self.table_collection_translation}_{uuid.uuid4().hex}"
-					temp_collection_image = f"temp_{self.table_collection_image}_{uuid.uuid4().hex}"
+					temp_collection = f"{self.table_collection.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_collection_translation = f"{self.table_collection_translation.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_collection_image = f"{self.table_collection_image.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 
 					cursor.execute(f"""
 						CREATE TEMP TABLE {temp_collection} (LIKE {self.table_collection} INCLUDING ALL);
@@ -122,7 +122,7 @@ class CollectionConfig(Config):
 							SELECT {', '.join(self.collection_translation_on_conflict)}
 							FROM {temp_collection_translation}
 						)
-						AND collection IN (
+						AND collection_id IN (
 							SELECT id FROM {temp_collection}
 						);
 					""")
@@ -134,7 +134,7 @@ class CollectionConfig(Config):
 							SELECT {', '.join(self.collection_image_on_conflict)}
 							FROM {temp_collection_image}
 						)
-						AND collection IN (
+						AND collection_id IN (
 							SELECT id FROM {temp_collection}
 						);
 					""")

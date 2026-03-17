@@ -121,7 +121,7 @@ def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 	logger.info(f"Syncing person for {date}...")
 	config = PersonConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_person")
+		config.log_manager.init(type="person")
 
 		# Get the list of person from TMDB and the database
 		config.log_manager.fetching_data()

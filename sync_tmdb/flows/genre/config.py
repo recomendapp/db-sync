@@ -7,8 +7,8 @@ class GenreConfig(Config):
 		self.flow_name: str = "genre"
 
 		# Tables
-		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb_genre")
-		self.table_genre_translation: str = self.config.get("db_tables", {}).get("genre_translation", "tmdb_genre_translation")
+		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb.genre")
+		self.table_genre_translation: str = self.config.get("db_tables", {}).get("genre_translation", "tmdb.genre_translation")
 
 		# CSV file containing the missing genres
 		self.genre: str = None

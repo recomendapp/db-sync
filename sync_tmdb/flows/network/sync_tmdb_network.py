@@ -89,7 +89,7 @@ def sync_tmdb_network(date: date = date.today()):
 	logger.info(f"Syncing network for {date}...")
 	config = NetworkConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_network")
+		config.log_manager.init(type="network")
 
 		# Get the list of networks from TMDB and the database
 		config.log_manager.fetching_data()

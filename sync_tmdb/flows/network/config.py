@@ -11,9 +11,9 @@ class NetworkConfig(Config):
 		self.flow_name: str = "network"
 
 		# Tables
-		self.table_network: str = self.config.get("db_tables", {}).get("network", "tmdb_network")
-		self.table_network_image: str = self.config.get("db_tables", {}).get("network_image", "tmdb_network_image")
-		self.table_network_alternative_name: str = self.config.get("db_tables", {}).get("network_alternative_name", "tmdb_network_alternative_name")
+		self.table_network: str = self.config.get("db_tables", {}).get("network", "tmdb.network")
+		self.table_network_image: str = self.config.get("db_tables", {}).get("network_image", "tmdb.network_image")
+		self.table_network_alternative_name: str = self.config.get("db_tables", {}).get("network_alternative_name", "tmdb.network_alternative_name")
 
 		# Ids
 		self.extra_networks: set = {}
@@ -21,13 +21,13 @@ class NetworkConfig(Config):
 
 		# Columns
 		self.network_columns: list[str] = ["id", "name", "headquarters", "homepage", "origin_country"]
-		self.network_image_columns: list[str] = ["id", "network", "file_path", "file_type", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
-		self.network_alternative_name_columns: list[str] = ["network", "name", "type"]
+		self.network_image_columns: list[str] = ["id", "network_id", "file_path", "file_type", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
+		self.network_alternative_name_columns: list[str] = ["network_id", "name", "type"]
 		
 		# On conflict
 		self.network_on_conflict: list[str] = ["id"]
 		self.network_image_on_conflict: list[str] = ["id"]
-		self.network_alternative_name_on_conflict: list[str] = ["network", "name", "type"]
+		self.network_alternative_name_on_conflict: list[str] = ["network_id", "name", "type"]
 
 		# On conflict update
 		self.network_on_conflict_update: list[str] = [col for col in self.network_columns if col not in self.network_on_conflict]
@@ -66,9 +66,9 @@ class NetworkConfig(Config):
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
-					temp_network = f"temp_{self.table_network}_{uuid.uuid4().hex}"
-					temp_network_image = f"temp_{self.table_network_image}_{uuid.uuid4().hex}"
-					temp_network_alternative_name = f"temp_{self.table_network_alternative_name}_{uuid.uuid4().hex}"
+					temp_network = f"{self.table_network.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_network_image = f"{self.table_network_image.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_network_alternative_name = f"{self.table_network_alternative_name.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 					cursor.execute(f"""
 						CREATE TEMP TABLE {temp_network} (LIKE {self.table_network} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_network_image} (LIKE {self.table_network_image} INCLUDING ALL);

@@ -7,4 +7,4 @@ class KeywordConfig(Config):
 		self.flow_name: str = "keyword"
 
 		# Tables
-		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb_keyword")
+		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb.keyword")

@@ -24,7 +24,7 @@ class Mapper:
 		company_image_data = [
 			{
 				"id": image["id"],
-				"company": companyId,
+				"company_id": companyId,
 				"file_path": image["file_path"],
 				"file_type": image["file_type"],
 				"aspect_ratio": image["aspect_ratio"],
@@ -44,7 +44,7 @@ class Mapper:
 		alternative_names = company.get("alternative_names", {}).get("results", [])
 		company_alternative_name_data = [
 			{
-				"company": companyId,
+				"company_id": companyId,
 				"name": alternative_name["name"]
 			}
 			for alternative_name in alternative_names

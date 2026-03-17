@@ -21,7 +21,7 @@ class Mappers:
 	def _map_genre_translation(self, genres: dict) -> pd.DataFrame:
 		genre_translation_data = [
 			{
-				"genre": item["id"],
+				"genre_id": item["id"],
 				"name": item["name"],
 				"language": self.default_language.code
 			}
@@ -31,7 +31,7 @@ class Mappers:
 		for extra_language in self.extra_languages:
 			genre_translation_data.extend([
 				{
-					"genre": item["id"],
+					"genre_id": item["id"],
 					"name": item["name"],
 					"language": extra_language.code
 				}

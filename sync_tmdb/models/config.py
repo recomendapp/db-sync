@@ -11,6 +11,7 @@ from prefect.logging import get_run_logger
 from prefect import task
 import pandas as pd
 import gc
+import uuid
 
 class Config:
 	def __init__(self, date: date):
@@ -56,7 +57,7 @@ class Config:
 			with conn.cursor() as cursor:
 				conn.autocommit = False
 
-				temp_table_name = f"temp_{table_name}_popularity_update"
+				temp_table_name = f"{table_name.replace('.', '_')}_temp_popularity_update_{uuid.uuid4().hex}"
 				cursor.execute(f"CREATE TEMP TABLE {temp_table_name} (id INTEGER PRIMARY KEY, popularity REAL) ON COMMIT DROP;")
 
 				with open(popularity_csv.file_path, "r", encoding="utf-8") as f:

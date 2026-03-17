@@ -11,11 +11,11 @@ class PersonConfig(Config):
 		self.flow_name: str = "person"
 
 		# Tables
-		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb_person")
-		self.table_person_translation: str = self.config.get("db_tables", {}).get("person_translation", "tmdb_person_translation")
-		self.table_person_image: str = self.config.get("db_tables", {}).get("person_image", "tmdb_person_image")
-		self.table_person_external_id: str = self.config.get("db_tables", {}).get("person_external_id", "tmdb_person_external_id")
-		self.table_person_also_known_as: str = self.config.get("db_tables", {}).get("person_also_known_as", "tmdb_person_also_known_as")
+		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb.person")
+		self.table_person_translation: str = self.config.get("db_tables", {}).get("person_translation", "tmdb.person_translation")
+		self.table_person_image: str = self.config.get("db_tables", {}).get("person_image", "tmdb.person_image")
+		self.table_person_external_id: str = self.config.get("db_tables", {}).get("person_external_id", "tmdb.person_external_id")
+		self.table_person_also_known_as: str = self.config.get("db_tables", {}).get("person_also_known_as", "tmdb.person_also_known_as")
 
 		# Ids
 		self.extra_persons: set = None
@@ -23,17 +23,17 @@ class PersonConfig(Config):
 
 		# Columns
 		self.person_columns: list[str] = ["id", "adult", "birthday", "deathday", "gender", "homepage", "imdb_id", "known_for_department", "name", "place_of_birth", "popularity"]
-		self.person_translation_columns: list[str] = ["person", "biography", "iso_639_1", "iso_3166_1"]
-		self.person_image_columns: list[str] = ["person", "file_path", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
-		self.person_external_id_columns: list[str] = ["person", "source", "value"]
-		self.person_also_known_as_columns: list[str] = ["person", "name"]
+		self.person_translation_columns: list[str] = ["person_id", "biography", "iso_639_1", "iso_3166_1"]
+		self.person_image_columns: list[str] = ["person_id", "file_path", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
+		self.person_external_id_columns: list[str] = ["person_id", "source", "value"]
+		self.person_also_known_as_columns: list[str] = ["person_id", "name"]
 
 		# On conflict
 		self.person_on_conflict: list[str] = ["id"]
-		self.person_translation_on_conflict: list[str] = ["person", "iso_639_1", "iso_3166_1"]
-		self.person_image_on_conflict: list[str] = ["person", "file_path"]
-		self.person_external_id_on_conflict: list[str] = ["person", "source"]
-		self.person_also_known_as_on_conflict: list[str] = ["person", "name"]
+		self.person_translation_on_conflict: list[str] = ["person_id", "iso_639_1", "iso_3166_1"]
+		self.person_image_on_conflict: list[str] = ["person_id", "file_path"]
+		self.person_external_id_on_conflict: list[str] = ["person_id", "source"]
+		self.person_also_known_as_on_conflict: list[str] = ["person_id", "name"]
 
 		# On conflict update
 		self.person_on_conflict_update: list[str] = [col for col in self.person_columns if col not in self.person_on_conflict]
@@ -88,11 +88,11 @@ class PersonConfig(Config):
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
-					temp_person = f"temp_{self.table_person}_{uuid.uuid4().hex}"
-					temp_person_translation = f"temp_{self.table_person_translation}_{uuid.uuid4().hex}"
-					temp_person_image = f"temp_{self.table_person_image}_{uuid.uuid4().hex}"
-					temp_person_external_id = f"temp_{self.table_person_external_id}_{uuid.uuid4().hex}"
-					temp_person_also_known_as = f"temp_{self.table_person_also_known_as}_{uuid.uuid4().hex}"
+					temp_person = f"{self.table_person.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_person_translation = f"{self.table_person_translation.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_person_image = f"{self.table_person_image.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_person_external_id = f"{self.table_person_external_id.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_person_also_known_as = f"{self.table_person_also_known_as.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 
 					cursor.execute(f"""
 						CREATE TEMP TABLE {temp_person} (LIKE {self.table_person} INCLUDING ALL);
@@ -165,7 +165,7 @@ class PersonConfig(Config):
 							SELECT {','.join(self.person_translation_on_conflict)}
 							FROM {temp_person_translation}
 						)
-						AND person IN (
+						AND person_id IN (
 							SELECT id FROM {temp_person}
 						);
 					""")
@@ -177,7 +177,7 @@ class PersonConfig(Config):
 							SELECT {','.join(self.person_image_on_conflict)}
 							FROM {temp_person_image}
 						)
-						AND person IN (
+						AND person_id IN (
 							SELECT id FROM {temp_person}
 						);
 					""")
@@ -189,7 +189,7 @@ class PersonConfig(Config):
 							SELECT {','.join(self.person_external_id_on_conflict)}
 							FROM {temp_person_external_id}
 						)
-						AND person IN (
+						AND person_id IN (
 							SELECT id FROM {temp_person}
 						);
 					""")
@@ -201,7 +201,7 @@ class PersonConfig(Config):
 							SELECT {','.join(self.person_also_known_as_on_conflict)}
 							FROM {temp_person_also_known_as}
 						)
-						AND person IN (
+						AND person_id IN (
 							SELECT id FROM {temp_person}
 						);
 					""")

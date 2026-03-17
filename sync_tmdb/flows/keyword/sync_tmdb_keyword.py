@@ -4,6 +4,7 @@
 
 from datetime import date
 import pandas as pd
+import uuid
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow
@@ -64,16 +65,17 @@ def process_missing_keywords(config: KeywordConfig, missing_keywords: pd.DataFra
 				with conn.cursor() as cursor:
 					conn.autocommit = False
 					try:
+						temp_keyword = f"{config.table_keyword.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 						cursor.execute(f"""
-							CREATE TEMP TABLE temp_{config.table_keyword} (LIKE {config.table_keyword} INCLUDING ALL);
+							CREATE TEMP TABLE {temp_keyword} (LIKE {config.table_keyword} INCLUDING ALL);
 						""")
 
 						with open(keyword_csv.file_path, "r") as f:
-							cursor.copy_expert(f"COPY temp_{config.table_keyword} ({','.join(get_csv_header(f))}) FROM STDIN WITH CSV HEADER", f)
+							cursor.copy_expert(f"COPY {temp_keyword} ({','.join(get_csv_header(f))}) FROM STDIN WITH CSV HEADER", f)
 					
 						cursor.execute(f"""
 							INSERT INTO {config.table_keyword} (id, name)
-							SELECT id, name FROM temp_{config.table_keyword}
+							SELECT id, name FROM {temp_keyword}
 							ON CONFLICT (id) DO UPDATE
 							SET name = EXCLUDED.name;
 						""")
@@ -94,7 +96,7 @@ def sync_tmdb_keyword(date: date = date.today()):
 	logger.info(f"Syncing keyword for {date}...")
 	config = KeywordConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_keyword")
+		config.log_manager.init(type="keyword")
 
 		# Get the list of keyword from TMDB and the database
 		config.log_manager.fetching_data()

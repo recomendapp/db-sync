@@ -4,8 +4,8 @@
 	  "fr"
 	],
 	"db_tables": {
-	  "language": "tmdb_language",
-	  "country": "tmdb_country",
-	  "genre": "tmdb_genre"
+	  "language": "tmdb.language",
+	  "country": "tmdb.country",
+	  "genre": "tmdb.genre"
 	}
   }
