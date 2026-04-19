@@ -83,7 +83,7 @@ def sync_tmdb_country(date: date = date.today()):
 	logger.info(f"Syncing country for {date}...")
 	config = CountryConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_country")
+		config.log_manager.init(type="country")
 
 		# Get the list of country from TMDB and the database
 		config.log_manager.fetching_data()

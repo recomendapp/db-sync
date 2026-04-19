@@ -24,41 +24,41 @@ class SerieConfig(Config):
 
 
 		# Tables
-		self.table_serie: str = self.config.get("db_tables", {}).get("serie", "tmdb_tv_series")
-		self.table_serie_alternative_titles: str = self.config.get("db_tables", {}).get("serie_alternative_titles", "tmdb_tv_series_alternative_titles")
-		self.table_serie_content_ratings: str = self.config.get("db_tables", {}).get("serie_content_ratings", "tmdb_tv_series_content_ratings")
-		self.table_serie_external_ids: str = self.config.get("db_tables", {}).get("serie_external_ids", "tmdb_tv_series_external_ids")
-		self.table_serie_genres: str = self.config.get("db_tables", {}).get("serie_genres", "tmdb_tv_series_genres")
-		self.table_serie_images: str = self.config.get("db_tables", {}).get("serie_images", "tmdb_tv_series_images")
-		self.table_serie_keywords: str = self.config.get("db_tables", {}).get("serie_keywords", "tmdb_tv_series_keywords")
-		self.table_serie_languages: str = self.config.get("db_tables", {}).get("serie_languages", "tmdb_tv_series_languages")
-		self.table_serie_networks: str = self.config.get("db_tables", {}).get("serie_networks", "tmdb_tv_series_networks")
-		self.table_serie_origin_country: str = self.config.get("db_tables", {}).get("serie_origin_country", "tmdb_tv_series_origin_country")
-		self.table_serie_production_companies: str = self.config.get("db_tables", {}).get("serie_production_companies", "tmdb_tv_series_production_companies")
-		self.table_serie_production_countries: str = self.config.get("db_tables", {}).get("serie_production_countries", "tmdb_tv_series_production_countries")
-		self.table_serie_spoken_languages: str = self.config.get("db_tables", {}).get("serie_spoken_languages", "tmdb_tv_series_spoken_languages")
-		self.table_serie_translations: str = self.config.get("db_tables", {}).get("serie_translations", "tmdb_tv_series_translations")
-		self.table_serie_videos: str = self.config.get("db_tables", {}).get("serie_videos", "tmdb_tv_series_videos")
-		self.table_serie_credits: str = self.config.get("db_tables", {}).get("serie_credits", "tmdb_tv_series_credits")
-		self.table_serie_roles: str = self.config.get("db_tables", {}).get("serie_roles", "tmdb_tv_series_roles")
+		self.table_serie: str = self.config.get("db_tables", {}).get("serie", "tmdb.tv_series")
+		self.table_serie_alternative_titles: str = self.config.get("db_tables", {}).get("serie_alternative_titles", "tmdb.tv_series_alternative_title")
+		self.table_serie_content_ratings: str = self.config.get("db_tables", {}).get("serie_content_ratings", "tmdb.tv_series_content_rating")
+		self.table_serie_external_ids: str = self.config.get("db_tables", {}).get("serie_external_ids", "tmdb.tv_series_external_id")
+		self.table_serie_genres: str = self.config.get("db_tables", {}).get("serie_genres", "tmdb.tv_series_genre")
+		self.table_serie_images: str = self.config.get("db_tables", {}).get("serie_images", "tmdb.tv_series_image")
+		self.table_serie_keywords: str = self.config.get("db_tables", {}).get("serie_keywords", "tmdb.tv_series_keyword")
+		self.table_serie_languages: str = self.config.get("db_tables", {}).get("serie_languages", "tmdb.tv_series_language")
+		self.table_serie_networks: str = self.config.get("db_tables", {}).get("serie_networks", "tmdb.tv_series_network")
+		self.table_serie_origin_country: str = self.config.get("db_tables", {}).get("serie_origin_country", "tmdb.tv_series_origin_country")
+		self.table_serie_production_companies: str = self.config.get("db_tables", {}).get("serie_production_companies", "tmdb.tv_series_production_company")
+		self.table_serie_production_countries: str = self.config.get("db_tables", {}).get("serie_production_countries", "tmdb.tv_series_production_country")
+		self.table_serie_spoken_languages: str = self.config.get("db_tables", {}).get("serie_spoken_languages", "tmdb.tv_series_spoken_language")
+		self.table_serie_translations: str = self.config.get("db_tables", {}).get("serie_translations", "tmdb.tv_series_translation")
+		self.table_serie_videos: str = self.config.get("db_tables", {}).get("serie_videos", "tmdb.tv_series_video")
+		self.table_serie_credits: str = self.config.get("db_tables", {}).get("serie_credits", "tmdb.tv_series_credit")
+		self.table_serie_roles: str = self.config.get("db_tables", {}).get("serie_roles", "tmdb.tv_series_role")
 		
 		# Seasons
-		self.table_serie_season: str = self.config.get("db_tables", {}).get("serie_season", "tmdb_tv_series_seasons")
-		self.table_serie_season_credits: str = self.config.get("db_tables", {}).get("serie_season_credits", "tmdb_tv_series_seasons_credits")
-		self.table_serie_season_translations: str = self.config.get("db_tables", {}).get("serie_season_translations", "tmdb_tv_series_seasons_translations")
+		self.table_serie_season: str = self.config.get("db_tables", {}).get("serie_season", "tmdb.tv_season")
+		self.table_serie_season_credits: str = self.config.get("db_tables", {}).get("serie_season_credits", "tmdb.tv_season_credit")
+		self.table_serie_season_translations: str = self.config.get("db_tables", {}).get("serie_season_translations", "tmdb.tv_season_translation")
 		
 		# Episodes
-		self.table_serie_episode: str = self.config.get("db_tables", {}).get("serie_episode", "tmdb_tv_series_episodes")
-		self.table_serie_episode_credits: str = self.config.get("db_tables", {}).get("serie_episode_credits", "tmdb_tv_series_episodes_credits")
+		self.table_serie_episode: str = self.config.get("db_tables", {}).get("serie_episode", "tmdb.tv_episode")
+		self.table_serie_episode_credits: str = self.config.get("db_tables", {}).get("serie_episode_credits", "tmdb.tv_episode_credit")
 
 		# Others
-		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
-		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb_country")
-		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb_genre")
-		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb_keyword")
-		self.table_network: str = self.config.get("db_tables", {}).get("network", "tmdb_network")
-		self.table_company: str = self.config.get("db_tables", {}).get("company", "tmdb_company")
-		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb_person")
+		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb.language")
+		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb.country")
+		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb.genre")
+		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb.keyword")
+		self.table_network: str = self.config.get("db_tables", {}).get("network", "tmdb.network")
+		self.table_company: str = self.config.get("db_tables", {}).get("company", "tmdb.company")
+		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb.person")
 
 		# Ids
 		self.extra_series: set = None
@@ -66,60 +66,59 @@ class SerieConfig(Config):
 
 		# Columns
 		self.serie_columns: list[str] = ["id", "adult", "in_production", "original_language", "original_name", "popularity", "status", "type", "vote_average", "vote_count", "number_of_episodes", "number_of_seasons", "first_air_date", "last_air_date"]
-		self.serie_alternative_titles_columns: list[str] = ["serie_id", "iso_3166_1", "title", "type"]
-		self.serie_content_ratings_columns: list[str] = ["serie_id", "iso_3166_1", "rating", "descriptors"]
-		self.serie_external_ids_columns: list[str] = ["serie_id", "source", "value"]
-		self.serie_genres_columns: list[str] = ["serie_id", "genre_id"]
-		self.serie_images_columns: list[str] = ["serie_id", "file_path", "type", "aspect_ratio", "height", "width", "vote_average", "vote_count", "iso_639_1"]
-		self.serie_keywords_columns: list[str] = ["serie_id", "keyword_id"]
-		self.serie_languages_columns: list[str] = ["serie_id", "iso_639_1"]
-		self.serie_networks_columns: list[str] = ["serie_id", "network_id"]
-		self.serie_origin_country_columns: list[str] = ["serie_id", "iso_3166_1"]
-		self.serie_production_companies_columns: list[str] = ["serie_id", "company_id"]
-		self.serie_production_countries_columns: list[str] = ["serie_id", "iso_3166_1"]
-		self.serie_spoken_languages_columns: list[str] = ["serie_id", "iso_639_1"]
-		self.serie_translations_columns: list[str] = ["serie_id", "name", "overview", "homepage", "tagline", "iso_639_1", "iso_3166_1"]
-		self.serie_videos_columns: list[str] = ["id", "serie_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
-		self.serie_credits_columns: list[str] = ["id", "serie_id", "person_id", "department", "job"]
+		self.serie_alternative_titles_columns: list[str] = ["tv_series_id", "iso_3166_1", "title", "type"]
+		self.serie_content_ratings_columns: list[str] = ["tv_series_id", "iso_3166_1", "rating", "descriptors"]
+		self.serie_external_ids_columns: list[str] = ["tv_series_id", "source", "value"]
+		self.serie_genres_columns: list[str] = ["tv_series_id", "genre_id"]
+		self.serie_images_columns: list[str] = ["tv_series_id", "file_path", "type", "aspect_ratio", "height", "width", "vote_average", "vote_count", "iso_639_1"]
+		self.serie_keywords_columns: list[str] = ["tv_series_id", "keyword_id"]
+		self.serie_languages_columns: list[str] = ["tv_series_id", "iso_639_1"]
+		self.serie_networks_columns: list[str] = ["tv_series_id", "network_id"]
+		self.serie_origin_country_columns: list[str] = ["tv_series_id", "iso_3166_1"]
+		self.serie_production_companies_columns: list[str] = ["tv_series_id", "company_id"]
+		self.serie_production_countries_columns: list[str] = ["tv_series_id", "iso_3166_1"]
+		self.serie_spoken_languages_columns: list[str] = ["tv_series_id", "iso_639_1"]
+		self.serie_translations_columns: list[str] = ["tv_series_id", "name", "overview", "homepage", "tagline", "iso_639_1", "iso_3166_1"]
+		self.serie_videos_columns: list[str] = ["id", "tv_series_id", "iso_639_1", "iso_3166_1", "name", "key", "site", "size", "type", "official", "published_at"]
+		self.serie_credits_columns: list[str] = ["id", "tv_series_id", "person_id", "department", "job"]
 		self.serie_roles_columns: list[str] = ["credit_id", "character", "episode_count", '"order"']
 
 		# Seasons
-		self.serie_season_columns: list[str] = ["id", "serie_id", "season_number", "vote_average", "vote_count", "poster_path"]
-		self.serie_season_credits_columns: list[str] = ["credit_id", "season_id", '"order"']
-		self.serie_season_translations_columns: list[str] = ["season_id", "name", "overview", "iso_639_1", "iso_3166_1"]
+		self.serie_season_columns: list[str] = ["id", "tv_series_id", "season_number", "episode_count", "vote_average", "vote_count", "poster_path"]
+		self.serie_season_credits_columns: list[str] = ["credit_id", "tv_season_id", '"order"']
+		self.serie_season_translations_columns: list[str] = ["tv_season_id", "name", "overview", "iso_639_1", "iso_3166_1"]
 
 		# Episodes
-		self.serie_episode_columns: list[str] = ["id", "season_id", "air_date", "episode_number", "episode_type", "name", "overview", "production_code", "runtime", "still_path", "vote_average", "vote_count"]
-		self.serie_episode_credits_columns: list[str] = ["credit_id", "episode_id"]
+		self.serie_episode_columns: list[str] = ["id", "tv_season_id", "air_date", "episode_number", "episode_type", "name", "overview", "production_code", "runtime", "still_path", "vote_average", "vote_count"]
+		self.serie_episode_credits_columns: list[str] = ["credit_id", "tv_episode_id"]
 
 		# On conflict
 		self.serie_on_conflict: list[str] = ["id"]
-		self.serie_alternative_titles_on_conflict: list[str] = ["serie_id", "iso_3166_1", "title", "type"]
-		self.serie_content_ratings_on_conflict: list[str] = ["serie_id", "iso_3166_1", "rating"]
-		self.serie_external_ids_on_conflict: list[str] = ["serie_id", "source"]
-		self.serie_genres_on_conflict: list[str] = ["serie_id", "genre_id"]
-		self.serie_images_on_conflict: list[str] = ["serie_id", "file_path", "type"]
-		self.serie_keywords_on_conflict: list[str] = ["serie_id", "keyword_id"]
-		self.serie_languages_on_conflict: list[str] = ["serie_id", "iso_639_1"]
-		self.serie_networks_on_conflict: list[str] = ["serie_id", "network_id"]
-		self.serie_origin_country_on_conflict: list[str] = ["serie_id", "iso_3166_1"]
-		self.serie_production_companies_on_conflict: list[str] = ["serie_id", "company_id"]
-		self.serie_production_countries_on_conflict: list[str] = ["serie_id", "iso_3166_1"]
-		self.serie_spoken_languages_on_conflict: list[str] = ["serie_id", "iso_639_1"]
-		self.serie_translations_on_conflict: list[str] = ["serie_id", "iso_639_1", "iso_3166_1"]
+		self.serie_alternative_titles_on_conflict: list[str] = ["tv_series_id", "iso_3166_1", "title", "type"]
+		self.serie_content_ratings_on_conflict: list[str] = ["tv_series_id", "iso_3166_1", "rating"]
+		self.serie_external_ids_on_conflict: list[str] = ["tv_series_id", "source"]
+		self.serie_genres_on_conflict: list[str] = ["tv_series_id", "genre_id"]
+		self.serie_images_on_conflict: list[str] = ["tv_series_id", "file_path", "type"]
+		self.serie_keywords_on_conflict: list[str] = ["tv_series_id", "keyword_id"]
+		self.serie_languages_on_conflict: list[str] = ["tv_series_id", "iso_639_1"]
+		self.serie_networks_on_conflict: list[str] = ["tv_series_id", "network_id"]
+		self.serie_origin_country_on_conflict: list[str] = ["tv_series_id", "iso_3166_1"]
+		self.serie_production_companies_on_conflict: list[str] = ["tv_series_id", "company_id"]
+		self.serie_production_countries_on_conflict: list[str] = ["tv_series_id", "iso_3166_1"]
+		self.serie_spoken_languages_on_conflict: list[str] = ["tv_series_id", "iso_639_1"]
+		self.serie_translations_on_conflict: list[str] = ["tv_series_id", "iso_639_1", "iso_3166_1"]
 		self.serie_videos_on_conflict: list[str] = ["id"]
 		self.serie_credits_on_conflict: list[str] = ["id"]
 		self.serie_roles_on_conflict: list[str] = ["credit_id"]
 
 		# Seasons
 		self.serie_season_on_conflict: list[str] = ["id"]
-		self.serie_season_credits_on_conflict: list[str] = ["credit_id", "season_id"]
-		self.serie_season_translations_on_conflict: list[str] = ["season_id", "iso_639_1", "iso_3166_1"]
+		self.serie_season_credits_on_conflict: list[str] = ["credit_id", "tv_season_id"]
+		self.serie_season_translations_on_conflict: list[str] = ["tv_season_id", "iso_639_1", "iso_3166_1"]
 
 		# Episodes
 		self.serie_episode_on_conflict: list[str] = ["id"]
-		self.serie_episode_credits_on_conflict: list[str] = ["credit_id", "episode_id"]
-
+		self.serie_episode_credits_on_conflict: list[str] = ["credit_id", "tv_episode_id"]
 		# On conflict update
 		self.serie_on_conflict_update: list[str] = [col for col in self.serie_columns if col not in self.serie_on_conflict]
 		self.serie_alternative_titles_on_conflict_update: list[str] = [col for col in self.serie_alternative_titles_columns if col not in self.serie_alternative_titles_on_conflict]
@@ -230,28 +229,28 @@ class SerieConfig(Config):
 				try:
 					conn.autocommit = False
 
-					temp_serie = f"temp_{self.table_serie}_{uuid.uuid4().hex}"
-					temp_serie_alternative_titles = f"temp_{self.table_serie_alternative_titles}_{uuid.uuid4().hex}"
-					temp_serie_content_ratings = f"temp_{self.table_serie_content_ratings}_{uuid.uuid4().hex}"
-					temp_serie_external_ids = f"temp_{self.table_serie_external_ids}_{uuid.uuid4().hex}"
-					temp_serie_genres = f"temp_{self.table_serie_genres}_{uuid.uuid4().hex}"
-					temp_serie_images = f"temp_{self.table_serie_images}_{uuid.uuid4().hex}"
-					temp_serie_keywords = f"temp_{self.table_serie_keywords}_{uuid.uuid4().hex}"
-					temp_serie_languages = f"temp_{self.table_serie_languages}_{uuid.uuid4().hex}"
-					temp_serie_networks = f"temp_{self.table_serie_networks}_{uuid.uuid4().hex}"
-					temp_serie_origin_country = f"temp_{self.table_serie_origin_country}_{uuid.uuid4().hex}"
-					temp_serie_production_companies = f"temp_{self.table_serie_production_companies}_{uuid.uuid4().hex}"
-					temp_serie_production_countries = f"temp_{self.table_serie_production_countries}_{uuid.uuid4().hex}"
-					temp_serie_spoken_languages = f"temp_{self.table_serie_spoken_languages}_{uuid.uuid4().hex}"
-					temp_serie_translations = f"temp_{self.table_serie_translations}_{uuid.uuid4().hex}"
-					temp_serie_videos = f"temp_{self.table_serie_videos}_{uuid.uuid4().hex}"
-					temp_serie_credits = f"temp_{self.table_serie_credits}_{uuid.uuid4().hex}"
-					temp_serie_roles = f"temp_{self.table_serie_roles}_{uuid.uuid4().hex}"
-					temp_serie_season = f"temp_{self.table_serie_season}_{uuid.uuid4().hex}"
-					temp_serie_season_credits = f"temp_{self.table_serie_season_credits}_{uuid.uuid4().hex}"
-					temp_serie_season_translations = f"temp_{self.table_serie_season_translations}_{uuid.uuid4().hex}"
-					temp_serie_episode = f"temp_{self.table_serie_episode}_{uuid.uuid4().hex}"
-					temp_serie_episode_credits = f"temp_{self.table_serie_episode_credits}_{uuid.uuid4().hex}"
+					temp_serie = f"{self.table_serie.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_alternative_titles = f"{self.table_serie_alternative_titles.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_content_ratings = f"{self.table_serie_content_ratings.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_external_ids = f"{self.table_serie_external_ids.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_genres = f"{self.table_serie_genres.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_images = f"{self.table_serie_images.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_keywords = f"{self.table_serie_keywords.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_languages = f"{self.table_serie_languages.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_networks = f"{self.table_serie_networks.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_origin_country = f"{self.table_serie_origin_country.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_production_companies = f"{self.table_serie_production_companies.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_production_countries = f"{self.table_serie_production_countries.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_spoken_languages = f"{self.table_serie_spoken_languages.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_translations = f"{self.table_serie_translations.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_videos = f"{self.table_serie_videos.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_credits = f"{self.table_serie_credits.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_roles = f"{self.table_serie_roles.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_season = f"{self.table_serie_season.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_season_credits = f"{self.table_serie_season_credits.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_season_translations = f"{self.table_serie_season_translations.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_episode = f"{self.table_serie_episode.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_serie_episode_credits = f"{self.table_serie_episode_credits.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 
 					cursor.execute(f"""
 						CREATE TEMP TABLE {temp_serie} (LIKE {self.table_serie} INCLUDING ALL);

@@ -15,42 +15,42 @@ SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / f"{COLLECTION_NA
 
 SQL_QUERY = """
 SELECT
-	m.id,
-	m.original_title,
-	m.popularity::float,
-	COALESCE(g.genre_ids, '{}') AS genre_ids,
-	rt.runtime,
-	rel.release_ts,
-	COALESCE(titles.titles, '{}') AS titles
-FROM public.tmdb_movie m
+    m.id,
+    m.original_title,
+    m.popularity::float,
+    COALESCE(g.genre_ids, '{}') AS genre_ids,
+    rt.runtime,
+    rel.release_ts,
+    COALESCE(titles.titles, '{}') AS titles
+FROM tmdb.movie m
 LEFT JOIN LATERAL (
-	SELECT ARRAY_REMOVE(ARRAY_AGG(DISTINCT btrim(t.title)), NULL) AS titles
-	FROM public.tmdb_movie_translations t
-	WHERE t.movie_id = m.id 
-		AND t.title IS NOT NULL 
-		AND btrim(t.title) <> ''
+    SELECT ARRAY_REMOVE(ARRAY_AGG(DISTINCT btrim(t.title)), NULL) AS titles
+    FROM tmdb.movie_translation t
+    WHERE t.movie_id = m.id 
+        AND t.title IS NOT NULL 
+        AND btrim(t.title) <> ''
 ) titles ON TRUE
 LEFT JOIN LATERAL (
-	SELECT t.runtime
-	FROM public.tmdb_movie_translations t
-	WHERE t.movie_id = m.id
-		AND t.runtime IS NOT NULL 
-		AND t.runtime > 0
-	ORDER BY (t.iso_639_1 = m.original_language) DESC, t.id
-	LIMIT 1
+    SELECT t.runtime
+    FROM tmdb.movie_translation t
+    WHERE t.movie_id = m.id
+        AND t.runtime IS NOT NULL 
+        AND t.runtime > 0
+    ORDER BY (t.iso_639_1 = m.original_language) DESC, t.id
+    LIMIT 1
 ) rt ON TRUE
 LEFT JOIN LATERAL (
-	SELECT EXTRACT(EPOCH FROM r.release_date)::bigint AS release_ts
-	FROM public.tmdb_movie_release_dates r
-	WHERE r.movie_id = m.id 
-		AND r.release_type IN (2,3)
-	ORDER BY r.release_date ASC
-	LIMIT 1
+    SELECT EXTRACT(EPOCH FROM r.release_date)::bigint AS release_ts
+    FROM tmdb.movie_release_date r
+    WHERE r.movie_id = m.id 
+        AND r.release_type IN (2,3)
+    ORDER BY r.release_date ASC
+    LIMIT 1
 ) rel ON TRUE
 LEFT JOIN LATERAL (
-	SELECT ARRAY_AGG(DISTINCT mg.genre_id)::int[] AS genre_ids
-	FROM public.tmdb_movie_genres mg
-	WHERE mg.movie_id = m.id
+    SELECT ARRAY_AGG(DISTINCT mg.genre_id)::int[] AS genre_ids
+    FROM tmdb.movie_genre mg
+    WHERE mg.movie_id = m.id
 ) g ON TRUE
 ORDER BY m.id
 """

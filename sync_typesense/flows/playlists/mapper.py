@@ -9,10 +9,9 @@ class Mapper:
             items_count,
             created_ts,
             updated_ts,
-            is_private,
+            visibility,
             owner_id,
-            guest_ids,
-            type_
+            member_ids
         ) = row
 
         doc = {
@@ -23,10 +22,9 @@ class Mapper:
             "items_count": int(items_count or 0),
             "created_at": int(created_ts),
             "updated_at": int(updated_ts),
-            "is_private": bool(is_private),
+            "visibility": visibility or "public",
             "owner_id": str(owner_id),
-            "guest_ids": [str(g) for g in (guest_ids or [])],
-            "type": type_ or "",
+            "member_ids": [str(m) for m in (member_ids or [])],
         }
 
         return doc

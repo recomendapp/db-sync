@@ -5,7 +5,7 @@ class SyncLogsManager:
 		from .config import Config
 		self.config: Config = config
 		self.db_client = config.db_client
-		self.table = self.config.config.get("logs", {}).get("table", "sync_logs")
+		self.table = self.config.config.get("logs", {}).get("table", "tmdb.sync_logs")
 		self.type: str = None
 		self.current_log: SyncLog = None
 		self.last_success_log: SyncLog = None

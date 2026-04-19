@@ -95,7 +95,7 @@ def sync_tmdb_collection(date: date = date.today()):
 	logger.info(f"Syncing collection for {date}...")
 	config = CollectionConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_collection")
+		config.log_manager.init(type="collection")
 
 		# Get the list of collection from TMDB and the database
 		config.log_manager.fetching_data()

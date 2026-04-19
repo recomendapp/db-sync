@@ -3,6 +3,7 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+import uuid
 
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow
@@ -91,28 +92,30 @@ def process_missing_genres(config: GenreConfig, tmdb_genres: list, missing_genre
 			with conn.cursor() as cursor:
 				conn.autocommit = False
 				try:
+					temp_genre = f"{config.table_genre.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_genre_translation = f"{config.table_genre_translation.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 					cursor.execute(f"""
-						CREATE TEMP TABLE temp_{config.table_genre} (LIKE {config.table_genre} INCLUDING ALL);
-						CREATE TEMP TABLE temp_{config.table_genre_translation} (LIKE {config.table_genre_translation} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_genre} (LIKE {config.table_genre} INCLUDING ALL);
+						CREATE TEMP TABLE {temp_genre_translation} (LIKE {config.table_genre_translation} INCLUDING ALL);
 					""")
 
 					with open(config.genre, "r") as f:
-						cursor.copy_expert(f"COPY temp_{config.table_genre} ({','.join(get_csv_header(f))}) FROM STDIN WITH CSV HEADER", f)
+						cursor.copy_expert(f"COPY {temp_genre} ({','.join(get_csv_header(f))}) FROM STDIN WITH CSV HEADER", f)
 					with open(config.genre_translation, "r") as f:
-						cursor.copy_expert(f"COPY temp_{config.table_genre_translation} ({','.join(get_csv_header(f))}) FROM STDIN WITH CSV HEADER", f)
+						cursor.copy_expert(f"COPY {temp_genre_translation} ({','.join(get_csv_header(f))}) FROM STDIN WITH CSV HEADER", f)
 
 					cursor.execute(f"""
 						INSERT INTO {config.table_genre} (id)
-						SELECT id FROM temp_{config.table_genre}
+						SELECT id FROM {temp_genre}
 						ON CONFLICT (id) DO NOTHING;
 					""")
 
 					cursor.execute(f"""
-						INSERT INTO {config.table_genre_translation} (genre, language, name)
-						SELECT genre, language, name FROM temp_{config.table_genre_translation}
-						ON CONFLICT (genre, language) DO UPDATE
-						SET name = EXCLUDED.name;
-					""")
+                        INSERT INTO {config.table_genre_translation} (genre_id, language, name)
+                        SELECT genre_id, language, name FROM {temp_genre_translation}
+                        ON CONFLICT (genre_id, language) DO UPDATE
+                        SET name = EXCLUDED.name;
+                    """)
 					
 					conn.commit()
 				except Exception as e:
@@ -128,7 +131,7 @@ def sync_tmdb_genre(date: date = date.today()):
 	logger.info(f"Syncing genre for {date}...")
 	config = GenreConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_genre")
+		config.log_manager.init(type="genre")
 
 		# Get the list of genre from TMDB and the database
 		config.log_manager.fetching_data()

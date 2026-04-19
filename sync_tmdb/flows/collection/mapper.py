@@ -18,7 +18,7 @@ class Mapper:
 		translations = collection["translations"]
 		collection_translation_data = [
 			{
-				"collection": collectionId,
+				"collection_id": collectionId,
 				"title": translation["data"].get("title", None),
 				"overview": translation["data"].get("overview", None),
 				"homepage": translation["data"].get("homepage", None),
@@ -38,7 +38,7 @@ class Mapper:
 		# Adding backdrops and posters
 		collection_image_data = [
 			{
-				"collection": collectionId,
+				"collection_id": collectionId,
 				"file_path": image["file_path"],
 				"type": "backdrop",
 				"aspect_ratio": image["aspect_ratio"],
@@ -51,7 +51,7 @@ class Mapper:
 			for image in collection["backdrops"]
 		] + [
 			{
-				"collection": collectionId,
+				"collection_id": collectionId,
 				"file_path": image["file_path"],
 				"type": "poster",
 				"aspect_ratio": image["aspect_ratio"],

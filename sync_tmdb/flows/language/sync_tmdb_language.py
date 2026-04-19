@@ -85,7 +85,7 @@ def sync_tmdb_language(date: date = date.today()):
 	logger.info(f"Syncing language for {date}...")
 	config = LanguageConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_language")
+		config.log_manager.init(type="language")
 
 		# Get the list of languages from TMDB and the database
 		config.log_manager.fetching_data()

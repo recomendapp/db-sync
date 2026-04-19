@@ -88,7 +88,7 @@ def sync_tmdb_company(date: date = date.today()):
 	logger.info(f"Syncing company for {date}...")
 	config = CompanyConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_company")
+		config.log_manager.init(type="company")
 
 		# Get the list of companies from TMDB and the database
 		config.log_manager.fetching_data()

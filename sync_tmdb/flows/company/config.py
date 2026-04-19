@@ -11,9 +11,9 @@ class CompanyConfig(Config):
 		self.flow_name: str = "company"
 
 		# Tables
-		self.table_company: str = self.config.get("db_tables", {}).get("company", "tmdb_company")
-		self.table_company_image: str = self.config.get("db_tables", {}).get("company_image", "tmdb_company_image")
-		self.table_company_alternative_name: str = self.config.get("db_tables", {}).get("company_alternative_name", "tmdb_company_alternative_name")
+		self.table_company: str = self.config.get("db_tables", {}).get("company", "tmdb.company")
+		self.table_company_image: str = self.config.get("db_tables", {}).get("company_image", "tmdb.company_image")
+		self.table_company_alternative_name: str = self.config.get("db_tables", {}).get("company_alternative_name", "tmdb.company_alternative_name")
 
 		# Ids
 		self.extra_companies: set = {}
@@ -21,13 +21,13 @@ class CompanyConfig(Config):
 
 		# Columns
 		self.company_columns: list[str] = ["id", "name", "description", "headquarters", "homepage", "origin_country", "parent_company"]
-		self.company_image_columns: list[str] = ["id", "company", "file_path", "file_type", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
-		self.company_alternative_name_columns: list[str] = ["company", "name"]
+		self.company_image_columns: list[str] = ["id", "company_id", "file_path", "file_type", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
+		self.company_alternative_name_columns: list[str] = ["company_id", "name"]
 		
 		# On conflict
 		self.company_on_conflict: list[str] = ["id"]
 		self.company_image_on_conflict: list[str] = ["id"]
-		self.company_alternative_name_on_conflict: list[str] = ["company", "name"]
+		self.company_alternative_name_on_conflict: list[str] = ["company_id", "name"]
 
 		# On conflict update
 		self.company_on_conflict_update: list[str] = [col for col in self.company_columns if col not in self.company_on_conflict]
@@ -66,9 +66,9 @@ class CompanyConfig(Config):
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
-					temp_company = f"temp_{self.table_company}_{uuid.uuid4().hex}"
-					temp_company_image = f"temp_{self.table_company_image}_{uuid.uuid4().hex}"
-					temp_company_alternative_name = f"temp_{self.table_company_alternative_name}_{uuid.uuid4().hex}"
+					temp_company = f"{self.table_company.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_company_image = f"{self.table_company_image.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_company_alternative_name = f"{self.table_company_alternative_name.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 					cursor.execute(f"""
 						CREATE TEMP TABLE {temp_company} (LIKE {self.table_company} INCLUDING ALL);
 						CREATE TEMP TABLE {temp_company_image} (LIKE {self.table_company_image} INCLUDING ALL);
@@ -119,7 +119,7 @@ class CompanyConfig(Config):
 							SELECT {','.join(self.company_image_on_conflict)}
 							FROM {temp_company_image}
 						)
-						AND company IN (
+						AND company_id IN (
 							SELECT id FROM {temp_company}
 						);
 					""")
@@ -131,7 +131,7 @@ class CompanyConfig(Config):
 							SELECT {','.join(self.company_alternative_name_on_conflict)}
 							FROM {temp_company_alternative_name}
 						)
-						AND company IN (
+						AND company_id IN (
 							SELECT id FROM {temp_company}
 						);
 					""")

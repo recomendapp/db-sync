@@ -15,12 +15,13 @@ SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / f"{COLLECTION_NA
 
 SQL_QUERY = """
 SELECT 
-    id,
-    username,
-    full_name,
-    followers_count
-FROM public.user
-ORDER BY created_at;
+    u.id,
+    u.username,
+    u.name,
+    COALESCE(p.followers_count, 0) AS followers_count
+FROM auth.user u
+LEFT JOIN public.profile p ON p.id = u.id
+ORDER BY u.created_at;
 """
 
 @task

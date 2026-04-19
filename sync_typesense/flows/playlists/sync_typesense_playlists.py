@@ -22,14 +22,17 @@ SELECT
     p.items_count,
     EXTRACT(EPOCH FROM p.created_at)::bigint AS created_ts,
     EXTRACT(EPOCH FROM p.updated_at)::bigint AS updated_ts,
-    p.private,
-    p.user_id,
-    ARRAY_REMOVE(ARRAY_AGG(pg.user_id::text), NULL) AS guest_ids,
-    p.type
-FROM public.playlists p
-LEFT JOIN public.playlist_guests pg
-    ON p.id = pg.playlist_id
-GROUP BY p.id
+    p.visibility,
+    p.user_id AS owner_id,
+    COALESCE(
+        ARRAY(
+            SELECT pm.user_id::text 
+            FROM public.playlist_member pm 
+            WHERE pm.playlist_id = p.id
+        ), 
+        '{}'::text[]
+    ) AS member_ids
+FROM public.playlist p
 ORDER BY p.created_at;
 """
 

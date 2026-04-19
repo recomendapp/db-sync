@@ -21,29 +21,29 @@ class MovieConfig(Config):
 
 
 		# Tables
-		self.table_movie: str = self.config.get("db_tables", {}).get("movie", "tmdb_movie")
-		self.table_movie_alternative_titles: str = self.config.get("db_tables", {}).get("movie_alternative_titles", "tmdb_movie_alternative_titles")
-		self.table_movie_credits: str = self.config.get("db_tables", {}).get("movie_credits", "tmdb_movie_credits")
-		self.table_movie_external_ids: str = self.config.get("db_tables", {}).get("movie_external_ids", "tmdb_movie_external_ids")
-		self.table_movie_genres: str = self.config.get("db_tables", {}).get("movie_genres", "tmdb_movie_genres")
-		self.table_movie_images: str = self.config.get("db_tables", {}).get("movie_images", "tmdb_movie_images")
-		self.table_movie_keywords: str = self.config.get("db_tables", {}).get("movie_keywords", "tmdb_movie_keywords")
-		self.table_movie_origin_country: str = self.config.get("db_tables", {}).get("movie_origin_country", "tmdb_movie_origin_country")
-		self.table_movie_production_companies: str = self.config.get("db_tables", {}).get("movie_production_companies", "tmdb_movie_production_companies")
-		self.table_movie_production_countries: str = self.config.get("db_tables", {}).get("movie_production_countries", "tmdb_movie_production_countries")
-		self.table_movie_release_dates: str = self.config.get("db_tables", {}).get("movie_release_dates", "tmdb_movie_release_dates")
-		self.table_movie_roles: str = self.config.get("db_tables", {}).get("movie_roles", "tmdb_movie_roles")
-		self.table_movie_spoken_languages: str = self.config.get("db_tables", {}).get("movie_spoken_languages", "tmdb_movie_spoken_languages")
-		self.table_movie_translations: str = self.config.get("db_tables", {}).get("movie_translations", "tmdb_movie_translations")
-		self.table_movie_videos: str = self.config.get("db_tables", {}).get("movie_videos", "tmdb_movie_videos")
+		self.table_movie: str = self.config.get("db_tables", {}).get("movie", "tmdb.movie")
+		self.table_movie_alternative_titles: str = self.config.get("db_tables", {}).get("movie_alternative_title", "tmdb.movie_alternative_title")
+		self.table_movie_credits: str = self.config.get("db_tables", {}).get("movie_credit", "tmdb.movie_credit")
+		self.table_movie_external_ids: str = self.config.get("db_tables", {}).get("movie_external_id", "tmdb.movie_external_id")
+		self.table_movie_genres: str = self.config.get("db_tables", {}).get("movie_genre", "tmdb.movie_genre")
+		self.table_movie_images: str = self.config.get("db_tables", {}).get("movie_image", "tmdb.movie_image")
+		self.table_movie_keywords: str = self.config.get("db_tables", {}).get("movie_keyword", "tmdb.movie_keyword")
+		self.table_movie_origin_country: str = self.config.get("db_tables", {}).get("movie_origin_country", "tmdb.movie_origin_country")
+		self.table_movie_production_companies: str = self.config.get("db_tables", {}).get("movie_production_company", "tmdb.movie_production_company")
+		self.table_movie_production_countries: str = self.config.get("db_tables", {}).get("movie_production_country", "tmdb.movie_production_country")
+		self.table_movie_release_dates: str = self.config.get("db_tables", {}).get("movie_release_date", "tmdb.movie_release_date")
+		self.table_movie_roles: str = self.config.get("db_tables", {}).get("movie_role", "tmdb.movie_role")
+		self.table_movie_spoken_languages: str = self.config.get("db_tables", {}).get("movie_spoken_language", "tmdb.movie_spoken_language")
+		self.table_movie_translations: str = self.config.get("db_tables", {}).get("movie_translation", "tmdb.movie_translation")
+		self.table_movie_videos: str = self.config.get("db_tables", {}).get("movie_video", "tmdb.movie_video")
 
-		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb_language")
-		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb_country")
-		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb_genre")
-		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb_keyword")
-		self.table_collection: str = self.config.get("db_tables", {}).get("collection", "tmdb_collection")
-		self.table_company: str = self.config.get("db_tables", {}).get("company", "tmdb_company")
-		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb_person")
+		self.table_language: str = self.config.get("db_tables", {}).get("language", "tmdb.language")
+		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb.country")
+		self.table_genre: str = self.config.get("db_tables", {}).get("genre", "tmdb.genre")
+		self.table_keyword: str = self.config.get("db_tables", {}).get("keyword", "tmdb.keyword")
+		self.table_collection: str = self.config.get("db_tables", {}).get("collection", "tmdb.collection")
+		self.table_company: str = self.config.get("db_tables", {}).get("company", "tmdb.company")
+		self.table_person: str = self.config.get("db_tables", {}).get("person", "tmdb.person")
 
 		# Ids
 		self.extra_movies: set = None
@@ -174,21 +174,21 @@ class MovieConfig(Config):
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
-					temp_movie = f"temp_{self.table_movie}_{uuid.uuid4().hex}"
-					temp_movie_alternative_titles = f"temp_{self.table_movie_alternative_titles}_{uuid.uuid4().hex}"
-					temp_movie_credits = f"temp_{self.table_movie_credits}_{uuid.uuid4().hex}"
-					temp_movie_external_ids = f"temp_{self.table_movie_external_ids}_{uuid.uuid4().hex}"
-					temp_movie_genres = f"temp_{self.table_movie_genres}_{uuid.uuid4().hex}"
-					temp_movie_images = f"temp_{self.table_movie_images}_{uuid.uuid4().hex}"
-					temp_movie_keywords = f"temp_{self.table_movie_keywords}_{uuid.uuid4().hex}"
-					temp_movie_origin_country = f"temp_{self.table_movie_origin_country}_{uuid.uuid4().hex}"
-					temp_movie_production_companies = f"temp_{self.table_movie_production_companies}_{uuid.uuid4().hex}"
-					temp_movie_production_countries = f"temp_{self.table_movie_production_countries}_{uuid.uuid4().hex}"
-					temp_movie_release_dates = f"temp_{self.table_movie_release_dates}_{uuid.uuid4().hex}"
-					temp_movie_roles = f"temp_{self.table_movie_roles}_{uuid.uuid4().hex}"
-					temp_movie_spoken_languages = f"temp_{self.table_movie_spoken_languages}_{uuid.uuid4().hex}"
-					temp_movie_translations = f"temp_{self.table_movie_translations}_{uuid.uuid4().hex}"
-					temp_movie_videos = f"temp_{self.table_movie_videos}_{uuid.uuid4().hex}"
+					temp_movie = f"{self.table_movie.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_alternative_titles = f"{self.table_movie_alternative_titles.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_credits = f"{self.table_movie_credits.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_external_ids = f"{self.table_movie_external_ids.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_genres = f"{self.table_movie_genres.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_images = f"{self.table_movie_images.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_keywords = f"{self.table_movie_keywords.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_origin_country = f"{self.table_movie_origin_country.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_production_companies = f"{self.table_movie_production_companies.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_production_countries = f"{self.table_movie_production_countries.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_release_dates = f"{self.table_movie_release_dates.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_roles = f"{self.table_movie_roles.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_spoken_languages = f"{self.table_movie_spoken_languages.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_translations = f"{self.table_movie_translations.replace('.', '_')}_temp_{uuid.uuid4().hex}"
+					temp_movie_videos = f"{self.table_movie_videos.replace('.', '_')}_temp_{uuid.uuid4().hex}"
 
 					cursor.execute(f"""
 						CREATE TEMP TABLE {temp_movie} (LIKE {self.table_movie} INCLUDING ALL);

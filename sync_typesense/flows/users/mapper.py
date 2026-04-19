@@ -4,13 +4,13 @@ class Mapper:
         (
             user_id,
             username,
-            full_name,
+            name,
             followers_count
         ) = row
 
         return {
             "id": str(user_id),
             "username": username or "",
-            "full_name": full_name or "",
+            "name": name or "",
             "followers_count": int(followers_count or 0),
         }

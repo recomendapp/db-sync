@@ -21,7 +21,7 @@ class Mapper:
 		network_image_data = [
 			{
 				"id": image["id"],
-				"network": networkId,
+				"network_id": networkId,
 				"file_path": image["file_path"],
 				"file_type": image["file_type"],
 				"aspect_ratio": image["aspect_ratio"],
@@ -41,7 +41,7 @@ class Mapper:
 		alternative_names = network.get("alternative_names", {}).get("results", [])
 		network_alternative_name_data = [
 			{
-				"network": networkId,
+				"network_id": networkId,
 				"name": alternative_name["name"],
 				"type": alternative_name["type"],
 			}

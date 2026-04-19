@@ -192,7 +192,7 @@ def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 	logger.info(f"Syncing movie for {date}...")
 	config = MovieConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_movie")
+		config.log_manager.init(type="movie")
 
 		# Get the list of movie from TMDB and the database
 		config.log_manager.fetching_data()

@@ -268,7 +268,7 @@ def sync_tmdb_serie(date: date = date.today(), update_popularity: bool = True):
 	logger.info(f"Syncing serie for {date}...")
 	config = SerieConfig(date=date)
 	try:
-		config.log_manager.init(type="tmdb_tv_serie")
+		config.log_manager.init(type="tv_serie")
 
 		# Get the list of series from TMDB and the database
 		config.log_manager.fetching_data()

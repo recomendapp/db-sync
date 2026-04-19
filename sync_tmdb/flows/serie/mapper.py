@@ -4,509 +4,509 @@ from .config import SerieConfig as Config
 from ...utils.nullify import nullify
 
 class Mapper:
-	@staticmethod
-	def serie(config: Config, serie: dict) -> pd.DataFrame:
-		serie_data = [
-			{
-				"id": serie["id"],
-				"adult": serie.get("adult", False) if serie.get("adult") is not None else False,
-				"in_production": serie.get("in_production", False),
-				"original_language": nullify(serie.get("original_language", None), ""),
-				"original_name": nullify(serie.get("original_name", None), ""),
-				"popularity": serie.get("popularity", 0),
-				"status": nullify(serie.get("status", None), ""),
-				"type": nullify(serie.get("type", None), ""),
-				"vote_average": serie.get("vote_average", 0),
-				"vote_count": serie.get("vote_count", 0),
-				"number_of_episodes": serie.get("number_of_episodes", 0),
-				"number_of_seasons": serie.get("number_of_seasons", 0),
-				"first_air_date": serie.get("first_air_date", None),
-				"last_air_date": serie.get("last_air_date", None),
-			}
-		]
-		df = pd.DataFrame(serie_data)
-		df = df.convert_dtypes()
-		return df
+    @staticmethod
+    def serie(config: Config, serie: dict) -> pd.DataFrame:
+        serie_data = [
+            {
+                "id": serie["id"],
+                "adult": serie.get("adult", False) if serie.get("adult") is not None else False,
+                "in_production": serie.get("in_production", False),
+                "original_language": nullify(serie.get("original_language", None), ""),
+                "original_name": nullify(serie.get("original_name", None), ""),
+                "popularity": serie.get("popularity", 0),
+                "status": nullify(serie.get("status", None), ""),
+                "type": nullify(serie.get("type", None), ""),
+                "vote_average": serie.get("vote_average", 0),
+                "vote_count": serie.get("vote_count", 0),
+                "number_of_episodes": serie.get("number_of_episodes", 0),
+                "number_of_seasons": serie.get("number_of_seasons", 0),
+                "first_air_date": serie.get("first_air_date", None),
+                "last_air_date": serie.get("last_air_date", None),
+            }
+        ]
+        df = pd.DataFrame(serie_data)
+        df = df.convert_dtypes()
+        return df
 
-	@staticmethod
-	def serie_alternative_titles(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		alternative_titles = serie.get("alternative_titles", {}).get("results", [])
-		serie_alternative_titles_data = [
-			{
-				"serie_id": serieId,
-				"iso_3166_1": alternative_title["iso_3166_1"],
-				"title": alternative_title["title"],
-				"type": nullify(alternative_title["type"], "")
-			}
-			for alternative_title in alternative_titles
-		]
+    @staticmethod
+    def serie_alternative_titles(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        alternative_titles = serie.get("alternative_titles", {}).get("results", [])
+        serie_alternative_titles_data = [
+            {
+                "tv_series_id": serieId,
+                "iso_3166_1": alternative_title["iso_3166_1"],
+                "title": alternative_title["title"],
+                "type": nullify(alternative_title["type"], "")
+            }
+            for alternative_title in alternative_titles
+        ]
 
-		return pd.DataFrame(serie_alternative_titles_data)
+        return pd.DataFrame(serie_alternative_titles_data)
 
-	@staticmethod
-	def serie_content_ratings(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		content_ratings = serie.get("content_ratings", {}).get("results", [])
-		serie_content_ratings_data = [
-			{
-				"serie_id": serieId,
-				"iso_3166_1": content_rating["iso_3166_1"],
-				"rating": content_rating["rating"],
-				"descriptors": (
-					"{" + ",".join(f'"{descriptor}"' for descriptor in content_rating.get("descriptors")) + "}"
-					if content_rating.get("descriptors")
-					else None
-				),
-			}
-			for content_rating in content_ratings
-		]
+    @staticmethod
+    def serie_content_ratings(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        content_ratings = serie.get("content_ratings", {}).get("results", [])
+        serie_content_ratings_data = [
+            {
+                "tv_series_id": serieId,
+                "iso_3166_1": content_rating["iso_3166_1"],
+                "rating": content_rating["rating"],
+                "descriptors": (
+                    "{" + ",".join(f'"{descriptor}"' for descriptor in content_rating.get("descriptors")) + "}"
+                    if content_rating.get("descriptors")
+                    else None
+                ),
+            }
+            for content_rating in content_ratings
+        ]
 
-		return pd.DataFrame(serie_content_ratings_data)
-	
-	@staticmethod
-	def serie_external_ids(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		external_ids = serie.get("external_ids", {})
-		serie_external_ids_data = [
-			{
-				"serie_id": serieId,
-				"source": source.replace("_id", "") if source.endswith("_id") else source,
-				"value": external_ids[source]
-			}
-			for source in external_ids
-			if external_ids.get(source)
-		]
+        return pd.DataFrame(serie_content_ratings_data)
+    
+    @staticmethod
+    def serie_external_ids(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        external_ids = serie.get("external_ids", {})
+        serie_external_ids_data = [
+            {
+                "tv_series_id": serieId,
+                "source": source.replace("_id", "") if source.endswith("_id") else source,
+                "value": external_ids[source]
+            }
+            for source in external_ids
+            if external_ids.get(source)
+        ]
 
-		return pd.DataFrame(serie_external_ids_data)
-	
-	@staticmethod
-	def serie_genres(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		genres = serie.get("genres", [])
-		serie_genres_data = [
-			{
-				"serie_id": serieId,
-				"genre_id": genre["id"]
-			}
-			for genre in genres
-			if genre["id"] in config.db_genres
-		]
+        return pd.DataFrame(serie_external_ids_data)
+    
+    @staticmethod
+    def serie_genres(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        genres = serie.get("genres", [])
+        serie_genres_data = [
+            {
+                "tv_series_id": serieId,
+                "genre_id": genre["id"]
+            }
+            for genre in genres
+            if genre["id"] in config.db_genres
+        ]
 
-		return pd.DataFrame(serie_genres_data)
-	
-	@staticmethod
-	def serie_images(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		images = serie.get("images", {})
-		serie_image_data = [
-			{
-				"serie_id": serieId,
-				"file_path": image["file_path"],
-				"type": imageType,
-				"aspect_ratio": image.get("aspect_ratio", 0),
-				"height": image.get("height", 0),
-				"width": image.get("width", 0),
-				"vote_average": image.get("vote_average", 0),
-				"vote_count": image.get("vote_count", 0),
-				"iso_639_1": nullify(image.get("iso_639_1", None), "")
-			}
-			for imageType in ["backdrop", "poster", "logo"]
-			for image in images.get(imageType + "s", [])
-		]
+        return pd.DataFrame(serie_genres_data)
+    
+    @staticmethod
+    def serie_images(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        images = serie.get("images", {})
+        serie_image_data = [
+            {
+                "tv_series_id": serieId,
+                "file_path": image["file_path"],
+                "type": imageType,
+                "aspect_ratio": image.get("aspect_ratio", 0),
+                "height": image.get("height", 0),
+                "width": image.get("width", 0),
+                "vote_average": image.get("vote_average", 0),
+                "vote_count": image.get("vote_count", 0),
+                "iso_639_1": nullify(image.get("iso_639_1", None), "")
+            }
+            for imageType in ["backdrop", "poster", "logo"]
+            for image in images.get(imageType + "s", [])
+        ]
 
-		return pd.DataFrame(serie_image_data)
-	
-	@staticmethod
-	def serie_keywords(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		keywords = serie.get("keywords", {}).get("results", [])
-		serie_keywords_data = [
-			{
-				"serie_id": serieId,
-				"keyword_id": keyword["id"]
-			}
-			for keyword in keywords
-			if keyword["id"] in config.db_keywords
-		]
+        return pd.DataFrame(serie_image_data)
+    
+    @staticmethod
+    def serie_keywords(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        keywords = serie.get("keywords", {}).get("results", [])
+        serie_keywords_data = [
+            {
+                "tv_series_id": serieId,
+                "keyword_id": keyword["id"]
+            }
+            for keyword in keywords
+            if keyword["id"] in config.db_keywords
+        ]
 
-		return pd.DataFrame(serie_keywords_data)
-	
-	@staticmethod
-	def serie_languages(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		languages = serie.get("languages", [])
-		serie_languages_data = [
-			{
-				"serie_id": serieId,
-				"iso_639_1": language
-			}
-			for language in languages
-			if language in config.db_languages
-		]
+        return pd.DataFrame(serie_keywords_data)
+    
+    @staticmethod
+    def serie_languages(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        languages = serie.get("languages", [])
+        serie_languages_data = [
+            {
+                "tv_series_id": serieId,
+                "iso_639_1": language
+            }
+            for language in languages
+            if language in config.db_languages
+        ]
 
-		return pd.DataFrame(serie_languages_data)
-	
-	@staticmethod
-	def serie_networks(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		networks = serie.get("networks", [])
-		serie_networks_data = [
-			{
-				"serie_id": serieId,
-				"network_id": network["id"]
-			}
-			for network in networks
-			if network["id"] in config.db_networks
-		]
+        return pd.DataFrame(serie_languages_data)
+    
+    @staticmethod
+    def serie_networks(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        networks = serie.get("networks", [])
+        serie_networks_data = [
+            {
+                "tv_series_id": serieId,
+                "network_id": network["id"]
+            }
+            for network in networks
+            if network["id"] in config.db_networks
+        ]
 
-		return pd.DataFrame(serie_networks_data)
-	
-	@staticmethod
-	def serie_origin_country(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		origin_country = serie.get("origin_country", [])
-		serie_origin_country_data = [
-			{
-				"serie_id": serieId,
-				"iso_3166_1": country
-			}
-			for country in origin_country
-			if country in config.db_countries
-		]
+        return pd.DataFrame(serie_networks_data)
+    
+    @staticmethod
+    def serie_origin_country(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        origin_country = serie.get("origin_country", [])
+        serie_origin_country_data = [
+            {
+                "tv_series_id": serieId,
+                "iso_3166_1": country
+            }
+            for country in origin_country
+            if country in config.db_countries
+        ]
 
-		return pd.DataFrame(serie_origin_country_data)
-	
-	@staticmethod
-	def serie_production_companies(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		production_companies = serie.get("production_companies", [])
-		serie_production_companies_data = [
-			{
-				"serie_id": serieId,
-				"company_id": company["id"]
-			}
-			for company in production_companies
-			if company["id"] in config.db_companies
-		]
+        return pd.DataFrame(serie_origin_country_data)
+    
+    @staticmethod
+    def serie_production_companies(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        production_companies = serie.get("production_companies", [])
+        serie_production_companies_data = [
+            {
+                "tv_series_id": serieId,
+                "company_id": company["id"]
+            }
+            for company in production_companies
+            if company["id"] in config.db_companies
+        ]
 
-		return pd.DataFrame(serie_production_companies_data)
-	
-	@staticmethod
-	def serie_production_countries(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		production_countries = serie.get("production_countries", [])
-		serie_production_countries_data = [
-			{
-				"serie_id": serieId,
-				"iso_3166_1": country["iso_3166_1"]
-			}
-			for country in production_countries
-			if country["iso_3166_1"] in config.db_countries
-		]
+        return pd.DataFrame(serie_production_companies_data)
+    
+    @staticmethod
+    def serie_production_countries(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        production_countries = serie.get("production_countries", [])
+        serie_production_countries_data = [
+            {
+                "tv_series_id": serieId,
+                "iso_3166_1": country["iso_3166_1"]
+            }
+            for country in production_countries
+            if country["iso_3166_1"] in config.db_countries
+        ]
 
-		return pd.DataFrame(serie_production_countries_data)
-	
-	@staticmethod
-	def serie_spoken_languages(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		spoken_languages = serie.get("spoken_languages", [])
-		serie_spoken_languages_data = [
-			{
-				"serie_id": serieId,
-				"iso_639_1": language["iso_639_1"]
-			}
-			for language in spoken_languages
-			if language["iso_639_1"] in config.db_languages
-		]
+        return pd.DataFrame(serie_production_countries_data)
+    
+    @staticmethod
+    def serie_spoken_languages(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        spoken_languages = serie.get("spoken_languages", [])
+        serie_spoken_languages_data = [
+            {
+                "tv_series_id": serieId,
+                "iso_639_1": language["iso_639_1"]
+            }
+            for language in spoken_languages
+            if language["iso_639_1"] in config.db_languages
+        ]
 
-		return pd.DataFrame(serie_spoken_languages_data)
-	
-	@staticmethod
-	def serie_translations(config: Config, serie: dict) -> pd.DataFrame:
-		serie_translation_data = [
-			{
-				"serie_id": serie["id"],
-				"name": nullify(translation["data"].get("name", None), ""),
-				"overview": nullify(translation["data"].get("overview", None), ""),
-				"homepage": nullify(translation["data"].get("homepage", None), ""),
-				"tagline": nullify(translation["data"].get("tagline", None), ""),
-				"iso_639_1": translation["iso_639_1"],
-				"iso_3166_1": translation["iso_3166_1"]
-			}
-			for translation in serie.get("translations", {}).get("translations", [])
-			if nullify(translation["data"].get("name", None), "") or nullify(translation["data"].get("overview", None), "") or nullify(translation["data"].get("homepage", None), "") or nullify(translation["data"].get("tagline", None), "")
-		]
+        return pd.DataFrame(serie_spoken_languages_data)
+    
+    @staticmethod
+    def serie_translations(config: Config, serie: dict) -> pd.DataFrame:
+        serie_translation_data = [
+            {
+                "tv_series_id": serie["id"],
+                "name": nullify(translation["data"].get("name", None), ""),
+                "overview": nullify(translation["data"].get("overview", None), ""),
+                "homepage": nullify(translation["data"].get("homepage", None), ""),
+                "tagline": nullify(translation["data"].get("tagline", None), ""),
+                "iso_639_1": translation["iso_639_1"],
+                "iso_3166_1": translation["iso_3166_1"]
+            }
+            for translation in serie.get("translations", {}).get("translations", [])
+            if nullify(translation["data"].get("name", None), "") or nullify(translation["data"].get("overview", None), "") or nullify(translation["data"].get("homepage", None), "") or nullify(translation["data"].get("tagline", None), "")
+        ]
 
-		return pd.DataFrame(serie_translation_data)
-	
-	@staticmethod
-	def serie_videos(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		videos = serie.get("videos", {}).get("results", [])
-		serie_videos_data = [
-			{
-				"id": video["id"],
-				"serie_id": serieId,
-				"iso_639_1": video.get("iso_639_1", None),
-				"iso_3166_1": video.get("iso_3166_1", None),
-				"name": video.get("name", None),
-				"key": video.get("key", None),
-				"site": video.get("site", None),
-				"size": video.get("size", None),
-				"type": video.get("type", None),
-				"official": video.get("official", False),
-				"published_at": video.get("published_at", None)
-			}
-			for video in videos
-		]
+        return pd.DataFrame(serie_translation_data)
+    
+    @staticmethod
+    def serie_videos(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        videos = serie.get("videos", {}).get("results", [])
+        serie_videos_data = [
+            {
+                "id": video["id"],
+                "tv_series_id": serieId,
+                "iso_639_1": video.get("iso_639_1", None),
+                "iso_3166_1": video.get("iso_3166_1", None),
+                "name": video.get("name", None),
+                "key": video.get("key", None),
+                "site": video.get("site", None),
+                "size": video.get("size", None),
+                "type": video.get("type", None),
+                "official": video.get("official", False),
+                "published_at": video.get("published_at", None)
+            }
+            for video in videos
+        ]
 
-		return pd.DataFrame(serie_videos_data)
-	
-	@staticmethod
-	def serie_credits(config: Config, serie: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
-		serieId = serie["id"]
-		created_by = serie.get("created_by", [])
-		credits = serie.get("aggregate_credits", {})
-		serie_credits_data = []
-		serie_roles_data = []
+        return pd.DataFrame(serie_videos_data)
+    
+    @staticmethod
+    def serie_credits(config: Config, serie: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+        serieId = serie["id"]
+        created_by = serie.get("created_by", [])
+        credits = serie.get("aggregate_credits", {})
+        serie_credits_data = []
+        serie_roles_data = []
 
-		# Cast (Actors)
-		for credit in credits.get("cast", []):
-			if credit["id"] in config.db_persons:
-				for role in credit.get("roles", []):
-					serie_credits_data.append(
-						{
-							"id": role["credit_id"],
-							"serie_id": serieId,
-							"person_id": credit["id"],
-							"department": "Acting",
-							"job": "Actor",
-						}
-					)
-					# Roles are only for actors
-					serie_roles_data.append(
-						{
-							"credit_id": role["credit_id"],
-							"character": role["character"],
-							"episode_count": role["episode_count"],
-							'"order"': credit.get("order", 0),
-						}
-					)
+        # Cast (Actors)
+        for credit in credits.get("cast", []):
+            if credit["id"] in config.db_persons:
+                for role in credit.get("roles", []):
+                    serie_credits_data.append(
+                        {
+                            "id": role["credit_id"],
+                            "tv_series_id": serieId,
+                            "person_id": credit["id"],
+                            "department": "Acting",
+                            "job": "Actor",
+                        }
+                    )
+                    # Roles are only for actors
+                    serie_roles_data.append(
+                        {
+                            "credit_id": role["credit_id"],
+                            "character": role["character"],
+                            "episode_count": role["episode_count"],
+                            '"order"': credit.get("order", 0),
+                        }
+                    )
 
-		# Crew
-		for credit in credits.get("crew", []):
-			if credit["id"] in config.db_persons:
-				for job_info in credit.get("jobs", []):
-					serie_credits_data.append(
-						{
-							"id": job_info["credit_id"],
-							"serie_id": serieId,
-							"person_id": credit["id"],
-							"department": credit["department"],
-							"job": job_info["job"],
-						}
-					)
+        # Crew
+        for credit in credits.get("crew", []):
+            if credit["id"] in config.db_persons:
+                for job_info in credit.get("jobs", []):
+                    serie_credits_data.append(
+                        {
+                            "id": job_info["credit_id"],
+                            "tv_series_id": serieId,
+                            "person_id": credit["id"],
+                            "department": credit["department"],
+                            "job": job_info["job"],
+                        }
+                    )
 
-		# Created by
-		for credit in created_by:
-			if credit.get("id") in config.db_persons:
-				serie_credits_data.append(
-					{
-						"id": credit["credit_id"],
-						"serie_id": serieId,
-						"person_id": credit["id"],
-						"department": "Creator",
-						"job": "Creator",
-					}
-				)
+        # Created by
+        for credit in created_by:
+            if credit.get("id") in config.db_persons:
+                serie_credits_data.append(
+                    {
+                        "id": credit["credit_id"],
+                        "tv_series_id": serieId,
+                        "person_id": credit["id"],
+                        "department": "Creator",
+                        "job": "Creator",
+                    }
+                )
 
-		config.tmp_credit_ids = set([c['id'] for c in serie_credits_data])
-		
-		credits_df = pd.DataFrame(serie_credits_data)
-		roles_df = pd.DataFrame(serie_roles_data)
-		
-		return credits_df, roles_df
-	
-	# Seasons
-	@staticmethod
-	def serie_season(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		seasons = serie.get("seasons", [])
-		serie_seasons_data = [
-			{
-				"id": season["id"],
-				"serie_id": serieId,
-				"season_number": season["season_number"],
-				"vote_average": season.get("vote_average", 0),
-				"vote_count": season.get("vote_count", 0),
-				"poster_path": nullify(season.get("poster_path", None), ""),
-			}
-			for season in seasons
-		]
+        config.tmp_credit_ids = set([c['id'] for c in serie_credits_data])
+        
+        credits_df = pd.DataFrame(serie_credits_data)
+        roles_df = pd.DataFrame(serie_roles_data)
+        
+        return credits_df, roles_df
+    
+    # Seasons
+    @staticmethod
+    def serie_season(config: Config, serie: dict) -> pd.DataFrame:
+        serieId = serie["id"]
+        seasons = serie.get("seasons", [])
+        serie_seasons_data = [
+            {
+                "id": season["id"],
+                "tv_series_id": serieId,
+                "season_number": season["season_number"],
+                "episode_count": len(season.get("episodes", [])),
+                "vote_average": season.get("vote_average", 0),
+                "vote_count": season.get("vote_count", 0),
+                "poster_path": nullify(season.get("poster_path", None), ""),
+            }
+            for season in seasons
+        ]
 
-		return pd.DataFrame(serie_seasons_data)
-	
-	@staticmethod
-	def serie_season_credits(config: Config, serie: dict) -> pd.DataFrame:
-		serieId = serie["id"]
-		seasons = serie.get("seasons", [])
-		serie_season_credits_data = []
+        return pd.DataFrame(serie_seasons_data)
+    
+    @staticmethod
+    def serie_season_credits(config: Config, serie: dict) -> pd.DataFrame:
+        seasons = serie.get("seasons", [])
+        serie_season_credits_data = []
 
-		for season in seasons:
-			credits = season.get("credits", {})
-			for credit in credits.get("cast", []):
-				if credit["credit_id"] in config.tmp_credit_ids:
-					serie_season_credits_data.append(
-						{
-							"credit_id": credit["credit_id"],
-							"season_id": season["id"],
-							"order": credit["order"],
-						}
-					)
-			
-			for credit in credits.get("crew", []):
-				if credit["credit_id"] in config.tmp_credit_ids:
-					serie_season_credits_data.append(
-						{
-							"credit_id": credit["credit_id"],
-							"season_id": season["id"],
-							"order": None,
-						}
-					)
-		df = pd.DataFrame(serie_season_credits_data)
-		df = df.convert_dtypes()
-		return df
-	
-	@staticmethod
-	def serie_season_translations(config: Config, serie: dict) -> pd.DataFrame:
-		seasons = serie.get("seasons", [])
-		serie_season_translations_data = [
-			{
-				"season_id": season["id"],
-				"name": nullify(translation["data"].get("name", None), ""),
-				"overview": nullify(translation["data"].get("overview", None), ""),
-				"iso_639_1": translation["iso_639_1"],
-				"iso_3166_1": translation["iso_3166_1"]
-			}
-			for season in seasons
-			for translation in season.get("translations", {}).get("translations", [])
-			if nullify(translation["data"].get("name", None), "") or nullify(translation["data"].get("overview", None), "")
-		]
-		
-		return pd.DataFrame(serie_season_translations_data)
-	
-	@staticmethod
-	def serie_episode(config: Config, serie: dict) -> pd.DataFrame:
-		seasons = serie.get("seasons", [])
-		serie_season_episodes_data = []
+        for season in seasons:
+            credits = season.get("credits", {})
+            for credit in credits.get("cast", []):
+                if credit["credit_id"] in config.tmp_credit_ids:
+                    serie_season_credits_data.append(
+                        {
+                            "credit_id": credit["credit_id"],
+                            "tv_season_id": season["id"],
+                            '"order"': credit["order"],
+                        }
+                    )
+            
+            for credit in credits.get("crew", []):
+                if credit["credit_id"] in config.tmp_credit_ids:
+                    serie_season_credits_data.append(
+                        {
+                            "credit_id": credit["credit_id"],
+                            "tv_season_id": season["id"],
+                            '"order"': None,
+                        }
+                    )
+        df = pd.DataFrame(serie_season_credits_data)
+        df = df.convert_dtypes()
+        return df
+    
+    @staticmethod
+    def serie_season_translations(config: Config, serie: dict) -> pd.DataFrame:
+        seasons = serie.get("seasons", [])
+        serie_season_translations_data = [
+            {
+                "tv_season_id": season["id"],
+                "name": nullify(translation["data"].get("name", None), ""),
+                "overview": nullify(translation["data"].get("overview", None), ""),
+                "iso_639_1": translation["iso_639_1"],
+                "iso_3166_1": translation["iso_3166_1"]
+            }
+            for season in seasons
+            for translation in season.get("translations", {}).get("translations", [])
+            if nullify(translation["data"].get("name", None), "") or nullify(translation["data"].get("overview", None), "")
+        ]
+        
+        return pd.DataFrame(serie_season_translations_data)
+    
+    @staticmethod
+    def serie_episode(config: Config, serie: dict) -> pd.DataFrame:
+        seasons = serie.get("seasons", [])
+        serie_season_episodes_data = []
 
-		for season in seasons:
-			episodes = season.get("episodes", [])
-			for episode in episodes:
-				serie_season_episodes_data.append(
-					{
-						"id": episode["id"],
-						"season_id": season["id"],
-						"air_date": episode.get("air_date", None),
-						"episode_number": episode["episode_number"],
-						"episode_type": nullify(episode.get("episode_type", None), ""),
-						"name": nullify(episode.get("name", None), ""),
-						"overview": nullify(episode.get("overview", None), ""),
-						"production_code": nullify(episode.get("production_code", None), ""),
-						"runtime": episode.get("runtime", 0),
-						"still_path": nullify(episode.get("still_path", None), ""),
-						"vote_average": episode.get("vote_average", 0),
-						"vote_count": episode.get("vote_count", 0),
-					}
-				)
-		
-		df = pd.DataFrame(serie_season_episodes_data)
-		df = df.convert_dtypes()
-		return df
+        for season in seasons:
+            episodes = season.get("episodes", [])
+            for episode in episodes:
+                serie_season_episodes_data.append(
+                    {
+                        "id": episode["id"],
+                        "tv_season_id": season["id"],
+                        "air_date": episode.get("air_date", None),
+                        "episode_number": episode["episode_number"],
+                        "episode_type": nullify(episode.get("episode_type", None), ""),
+                        "name": nullify(episode.get("name", None), ""),
+                        "overview": nullify(episode.get("overview", None), ""),
+                        "production_code": nullify(episode.get("production_code", None), ""),
+                        "runtime": episode.get("runtime", 0),
+                        "still_path": nullify(episode.get("still_path", None), ""),
+                        "vote_average": episode.get("vote_average", 0),
+                        "vote_count": episode.get("vote_count", 0),
+                    }
+                )
+        
+        df = pd.DataFrame(serie_season_episodes_data)
+        df = df.convert_dtypes()
+        return df
 
-	@staticmethod
-	def serie_episode_credits(config: Config, serie: dict) -> pd.DataFrame:
-		seasons = serie.get("seasons", [])
-		serie_season_episode_credits_data = []
+    @staticmethod
+    def serie_episode_credits(config: Config, serie: dict) -> pd.DataFrame:
+        seasons = serie.get("seasons", [])
+        serie_season_episode_credits_data = []
 
-		for season in seasons:
-			episodes = season.get("episodes", [])
-			for episode in episodes:
-				for credit in episode.get("guest_stars", []):
-					if credit["credit_id"] in config.tmp_credit_ids:
-						serie_season_episode_credits_data.append(
-							{
-								"credit_id": credit["credit_id"],
-								"episode_id": episode["id"],
-							}
-						)
-				
-				for credit in episode.get("crew", []):
-					if credit["credit_id"] in config.tmp_credit_ids:
-						serie_season_episode_credits_data.append(
-							{
-								"credit_id": credit["credit_id"],
-								"episode_id": episode["id"],
-							}
-						)
-					
-		return pd.DataFrame(serie_season_episode_credits_data)
-	
-	@staticmethod
-	def typesense(config: Config, serie: dict) -> dict:
-		translated_names = [
-			translation["data"].get("name", "")
-			for translation in serie.get("translations", {}).get("translations", [])
-			if translation["data"].get("name") and translation["data"].get("name").strip()
-		]
+        for season in seasons:
+            episodes = season.get("episodes", [])
+            for episode in episodes:
+                for credit in episode.get("guest_stars", []):
+                    if credit["credit_id"] in config.tmp_credit_ids:
+                        serie_season_episode_credits_data.append(
+                            {
+                                "credit_id": credit["credit_id"],
+                                "tv_episode_id": episode["id"],
+                            }
+                        )
+                
+                for credit in episode.get("crew", []):
+                    if credit["credit_id"] in config.tmp_credit_ids:
+                        serie_season_episode_credits_data.append(
+                            {
+                                "credit_id": credit["credit_id"],
+                                "tv_episode_id": episode["id"],
+                            }
+                        )
+                    
+        return pd.DataFrame(serie_season_episode_credits_data)
+    
+    @staticmethod
+    def typesense(config: Config, serie: dict) -> dict:
+        translated_names = [
+            translation["data"].get("name", "")
+            for translation in serie.get("translations", {}).get("translations", [])
+            if translation["data"].get("name") and translation["data"].get("name").strip()
+        ]
 
-		names_set = set(translated_names)
-		
-		original_name = serie.get("original_name")
-		if original_name and original_name.strip():
-			names_set.add(original_name.strip())
+        names_set = set(translated_names)
+        
+        original_name = serie.get("original_name")
+        if original_name and original_name.strip():
+            names_set.add(original_name.strip())
 
-		names_list = list(names_set)
+        names_list = list(names_set)
 
-		genre_ids = [genre["id"] for genre in serie.get("genres", [])]
-		
-		doc = {
-			"id": str(serie["id"]),
-			"original_name": original_name or "",
-			"names": names_list,
-			"popularity": float(serie.get("popularity", 0.0)),
-			"genre_ids": genre_ids,
-		}
+        genre_ids = [genre["id"] for genre in serie.get("genres", [])]
+        
+        doc = {
+            "id": str(serie["id"]),
+            "original_name": original_name or "",
+            "names": names_list,
+            "popularity": float(serie.get("popularity", 0.0)),
+            "genre_ids": genre_ids,
+        }
 
-		number_of_episodes = serie.get("number_of_episodes")
-		if number_of_episodes is not None:
-			doc["number_of_episodes"] = int(number_of_episodes)
-			
-		number_of_seasons = serie.get("number_of_seasons")
-		if number_of_seasons is not None:
-			doc["number_of_seasons"] = int(number_of_seasons)
+        number_of_episodes = serie.get("number_of_episodes")
+        if number_of_episodes is not None:
+            doc["number_of_episodes"] = int(number_of_episodes)
+            
+        number_of_seasons = serie.get("number_of_seasons")
+        if number_of_seasons is not None:
+            doc["number_of_seasons"] = int(number_of_seasons)
 
-		vote_average = serie.get("vote_average")
-		if vote_average is not None:
-			doc["vote_average"] = float(vote_average)
+        vote_average = serie.get("vote_average")
+        if vote_average is not None:
+            doc["vote_average"] = float(vote_average)
 
-		vote_count = serie.get("vote_count")
-		if vote_count is not None:
-			doc["vote_count"] = int(vote_count)
+        vote_count = serie.get("vote_count")
+        if vote_count is not None:
+            doc["vote_count"] = int(vote_count)
 
-		if serie.get("status"):
-			doc["status"] = serie["status"]
-			
-		if serie.get("type"):
-			doc["type"] = serie["type"]
-			
-		first_air_date = serie.get("first_air_date")
-		if first_air_date:
-			doc["first_air_date"] = int(pd.to_datetime(first_air_date).timestamp())
-			
-		last_air_date = serie.get("last_air_date")
-		if last_air_date:
-			doc["last_air_date"] = int(pd.to_datetime(last_air_date).timestamp())
+        if serie.get("status"):
+            doc["status"] = serie["status"]
+            
+        if serie.get("type"):
+            doc["type"] = serie["type"]
+            
+        first_air_date = serie.get("first_air_date")
+        if first_air_date:
+            doc["first_air_date"] = int(pd.to_datetime(first_air_date).timestamp())
+            
+        last_air_date = serie.get("last_air_date")
+        if last_air_date:
+            doc["last_air_date"] = int(pd.to_datetime(last_air_date).timestamp())
 
-		return doc
+        return doc

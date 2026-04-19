@@ -20,11 +20,11 @@ SELECT
     p.popularity::float AS popularity,
     p.known_for_department,
     COALESCE(aka.names, '{}') AS also_known_as
-FROM public.tmdb_person p
+FROM tmdb.person p
 LEFT JOIN LATERAL (
     SELECT ARRAY_AGG(DISTINCT btrim(a.name)) AS names
-    FROM public.tmdb_person_also_known_as a
-    WHERE a.person = p.id
+    FROM tmdb.person_also_known_as a
+    WHERE a.person_id = p.id
 ) AS aka ON TRUE
 ORDER BY p.id;
 """

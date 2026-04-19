@@ -7,7 +7,7 @@ class CountryConfig(Config):
 		self.flow_name: str = "country"
 
 		# Tables
-		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb_country")
+		self.table_country: str = self.config.get("db_tables", {}).get("country", "tmdb.country")
 
 		# Columns
 		self.country_column: str = "iso_3166_1"
