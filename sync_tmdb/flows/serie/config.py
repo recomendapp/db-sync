@@ -112,12 +112,12 @@ class SerieConfig(Config):
 		self.serie_roles_on_conflict: list[str] = ["credit_id"]
 
 		# Seasons
-		self.serie_season_on_conflict: list[str] = ["id"]
+		self.serie_season_on_conflict: list[str] = ["tv_series_id", "season_number"]
 		self.serie_season_credits_on_conflict: list[str] = ["credit_id", "tv_season_id"]
 		self.serie_season_translations_on_conflict: list[str] = ["tv_season_id", "iso_639_1", "iso_3166_1"]
 
 		# Episodes
-		self.serie_episode_on_conflict: list[str] = ["id"]
+		self.serie_episode_on_conflict: list[str] = ["tv_season_id", "episode_number"]
 		self.serie_episode_credits_on_conflict: list[str] = ["credit_id", "tv_episode_id"]
 		# On conflict update
 		self.serie_on_conflict_update: list[str] = [col for col in self.serie_columns if col not in self.serie_on_conflict]
@@ -445,13 +445,15 @@ class SerieConfig(Config):
 					# Delete all outdated seasons before inserting
 					# Careful, we dont have to delete all because user can have activity with seasons so we have to delete only the ones not in the new data BUT only series that are in the new data
 					cursor.execute(f"""
-						DELETE FROM {self.table_serie_season}
-						WHERE {self.serie_season_columns[0]} NOT IN (
-							SELECT id FROM {temp_serie_season}
-						) AND {self.serie_season_columns[1]} IN (
-							SELECT id FROM {temp_serie}
-						);
-					""")
+                        DELETE FROM {self.table_serie_season}
+                        WHERE {self.serie_season_columns[1]} IN (
+                            SELECT id FROM {temp_serie}
+                        ) AND NOT EXISTS (
+                            SELECT 1 FROM {temp_serie_season} temp
+                            WHERE temp.tv_series_id = {self.table_serie_season}.tv_series_id
+                              AND temp.season_number = {self.table_serie_season}.season_number
+                        );
+                    """)
 
 					# Delete all outdated season credits before inserting
 					cursor.execute(f"""
@@ -472,13 +474,15 @@ class SerieConfig(Config):
 					# Delete all outdated episodes before inserting
 					# Careful, we dont have to delete all because user can have activity with episodes so we have to delete only the ones not in the new data BUT only series that are in the new data
 					cursor.execute(f"""
-						DELETE FROM {self.table_serie_episode}
-						WHERE {self.serie_episode_columns[0]} NOT IN (
-							SELECT id FROM {temp_serie_episode}
-						) AND {self.serie_episode_columns[1]} IN (
-							SELECT id FROM {temp_serie_season}
-						);
-					""")
+                        DELETE FROM {self.table_serie_episode}
+                        WHERE {self.serie_episode_columns[1]} IN (
+                            SELECT id FROM {temp_serie_season}
+                        ) AND NOT EXISTS (
+                            SELECT 1 FROM {temp_serie_episode} temp
+                            WHERE temp.tv_season_id = {self.table_serie_episode}.tv_season_id
+                              AND temp.episode_number = {self.table_serie_episode}.episode_number
+                        );
+                    """)
 
 					# Delete all outdated episode credits before inserting
 					cursor.execute(f"""
