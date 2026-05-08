@@ -444,49 +444,49 @@ class SerieConfig(Config):
 
 					# Delete all outdated seasons before inserting
 					cursor.execute(f"""
-                        UPDATE {self.table_serie_season} AS s
-                        SET id = temp.id
-                        FROM {temp_serie_season} AS temp
-                        WHERE s.tv_series_id = temp.tv_series_id
-                          AND s.season_number = temp.season_number
-                          AND s.id != temp.id;
-                    """)
+						UPDATE {self.table_serie_season} AS s
+						SET id = temp.id
+						FROM {temp_serie_season} AS temp
+						WHERE s.tv_series_id = temp.tv_series_id
+							AND s.season_number = temp.season_number
+							AND s.id != temp.id;
+					""")
 
-                    cursor.execute(f"""
-                        UPDATE {self.table_serie_episode} AS e
-                        SET id = temp.id
-                        FROM {temp_serie_episode} AS temp
-                        WHERE e.tv_season_id = temp.tv_season_id
-                          AND e.episode_number = temp.episode_number
-                          AND e.id != temp.id;
-                    """)
+					cursor.execute(f"""
+						UPDATE {self.table_serie_episode} AS e
+						SET id = temp.id
+						FROM {temp_serie_episode} AS temp
+						WHERE e.tv_season_id = temp.tv_season_id
+							AND e.episode_number = temp.episode_number
+							AND e.id != temp.id;
+					""")
 
-                    cursor.execute(f"""
-                        DELETE FROM {self.table_serie_season}
-                        WHERE {self.serie_season_columns[1]} IN (SELECT id FROM {temp_serie})
-                          AND id NOT IN (SELECT id FROM {temp_serie_season});
-                    """)
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season}
+						WHERE {self.serie_season_columns[1]} IN (SELECT id FROM {temp_serie})
+							AND id NOT IN (SELECT id FROM {temp_serie_season});
+					""")
 
-                    cursor.execute(f"""
-                        DELETE FROM {self.table_serie_season_credits}
-                        WHERE {self.serie_season_credits_columns[1]} IN (SELECT id FROM {temp_serie_season});
-                    """)
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season_credits}
+						WHERE {self.serie_season_credits_columns[1]} IN (SELECT id FROM {temp_serie_season});
+					""")
 
-                    cursor.execute(f"""
-                        DELETE FROM {self.table_serie_season_translations}
-                        WHERE {self.serie_season_translations_columns[0]} IN (SELECT id FROM {temp_serie_season});
-                    """)
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season_translations}
+						WHERE {self.serie_season_translations_columns[0]} IN (SELECT id FROM {temp_serie_season});
+					""")
 
-                    cursor.execute(f"""
-                        DELETE FROM {self.table_serie_episode}
-                        WHERE {self.serie_episode_columns[1]} IN (SELECT id FROM {temp_serie_season})
-                          AND id NOT IN (SELECT id FROM {temp_serie_episode});
-                    """)
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_episode}
+						WHERE {self.serie_episode_columns[1]} IN (SELECT id FROM {temp_serie_season})
+							AND id NOT IN (SELECT id FROM {temp_serie_episode});
+					""")
 
-                    cursor.execute(f"""
-                        DELETE FROM {self.table_serie_episode_credits}
-                        WHERE {self.serie_episode_credits_columns[1]} IN (SELECT id FROM {temp_serie_episode});
-                    """)
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_episode_credits}
+						WHERE {self.serie_episode_credits_columns[1]} IN (SELECT id FROM {temp_serie_episode});
+					""")
 
 					insert_into(
 						cursor=cursor,
