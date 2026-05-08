@@ -112,12 +112,12 @@ class SerieConfig(Config):
 		self.serie_roles_on_conflict: list[str] = ["credit_id"]
 
 		# Seasons
-		self.serie_season_on_conflict: list[str] = ["tv_series_id", "season_number"]
+		self.serie_season_on_conflict: list[str] = ["id"]
 		self.serie_season_credits_on_conflict: list[str] = ["credit_id", "tv_season_id"]
 		self.serie_season_translations_on_conflict: list[str] = ["tv_season_id", "iso_639_1", "iso_3166_1"]
 
 		# Episodes
-		self.serie_episode_on_conflict: list[str] = ["tv_season_id", "episode_number"]
+		self.serie_episode_on_conflict: list[str] = ["id"]
 		self.serie_episode_credits_on_conflict: list[str] = ["credit_id", "tv_episode_id"]
 		# On conflict update
 		self.serie_on_conflict_update: list[str] = [col for col in self.serie_columns if col not in self.serie_on_conflict]
@@ -219,10 +219,10 @@ class SerieConfig(Config):
 			csv["serie_videos"].clean_duplicates(conflict_columns=self.serie_videos_on_conflict)
 			csv["serie_credits"].clean_duplicates(conflict_columns=self.serie_credits_on_conflict)
 			csv["serie_roles"].clean_duplicates(conflict_columns=self.serie_roles_on_conflict)
-			csv["serie_season"].clean_duplicates(conflict_columns=self.serie_season_on_conflict)
+			csv["serie_season"].clean_duplicates(conflict_columns=["tv_series_id", "season_number"])
 			csv["serie_season_credits"].clean_duplicates(conflict_columns=self.serie_season_credits_on_conflict)
 			csv["serie_season_translations"].clean_duplicates(conflict_columns=self.serie_season_translations_on_conflict)
-			csv["serie_episode"].clean_duplicates(conflict_columns=self.serie_episode_on_conflict)
+			csv["serie_episode"].clean_duplicates(conflict_columns=["tv_season_id", "episode_number"])
 			csv["serie_episode_credits"].clean_duplicates(conflict_columns=self.serie_episode_credits_on_conflict)
 
 			with conn.cursor() as cursor:
@@ -443,54 +443,50 @@ class SerieConfig(Config):
 					""")
 
 					# Delete all outdated seasons before inserting
-					# Careful, we dont have to delete all because user can have activity with seasons so we have to delete only the ones not in the new data BUT only series that are in the new data
 					cursor.execute(f"""
+                        UPDATE {self.table_serie_season} AS s
+                        SET id = temp.id
+                        FROM {temp_serie_season} AS temp
+                        WHERE s.tv_series_id = temp.tv_series_id
+                          AND s.season_number = temp.season_number
+                          AND s.id != temp.id;
+                    """)
+
+                    cursor.execute(f"""
+                        UPDATE {self.table_serie_episode} AS e
+                        SET id = temp.id
+                        FROM {temp_serie_episode} AS temp
+                        WHERE e.tv_season_id = temp.tv_season_id
+                          AND e.episode_number = temp.episode_number
+                          AND e.id != temp.id;
+                    """)
+
+                    cursor.execute(f"""
                         DELETE FROM {self.table_serie_season}
-                        WHERE {self.serie_season_columns[1]} IN (
-                            SELECT id FROM {temp_serie}
-                        ) AND NOT EXISTS (
-                            SELECT 1 FROM {temp_serie_season} temp
-                            WHERE temp.tv_series_id = {self.table_serie_season}.tv_series_id
-                              AND temp.season_number = {self.table_serie_season}.season_number
-                        );
+                        WHERE {self.serie_season_columns[1]} IN (SELECT id FROM {temp_serie})
+                          AND id NOT IN (SELECT id FROM {temp_serie_season});
                     """)
 
-					# Delete all outdated season credits before inserting
-					cursor.execute(f"""
-						DELETE FROM {self.table_serie_season_credits}
-						WHERE {self.serie_season_credits_columns[1]} IN (
-							SELECT id FROM {temp_serie_season}
-						);
-					""")
+                    cursor.execute(f"""
+                        DELETE FROM {self.table_serie_season_credits}
+                        WHERE {self.serie_season_credits_columns[1]} IN (SELECT id FROM {temp_serie_season});
+                    """)
 
-					# Delete all outdated season translations before inserting
-					cursor.execute(f"""
-						DELETE FROM {self.table_serie_season_translations}
-						WHERE {self.serie_season_translations_columns[0]} IN (
-							SELECT id FROM {temp_serie_season}
-						);
-					""")
+                    cursor.execute(f"""
+                        DELETE FROM {self.table_serie_season_translations}
+                        WHERE {self.serie_season_translations_columns[0]} IN (SELECT id FROM {temp_serie_season});
+                    """)
 
-					# Delete all outdated episodes before inserting
-					# Careful, we dont have to delete all because user can have activity with episodes so we have to delete only the ones not in the new data BUT only series that are in the new data
-					cursor.execute(f"""
+                    cursor.execute(f"""
                         DELETE FROM {self.table_serie_episode}
-                        WHERE {self.serie_episode_columns[1]} IN (
-                            SELECT id FROM {temp_serie_season}
-                        ) AND NOT EXISTS (
-                            SELECT 1 FROM {temp_serie_episode} temp
-                            WHERE temp.tv_season_id = {self.table_serie_episode}.tv_season_id
-                              AND temp.episode_number = {self.table_serie_episode}.episode_number
-                        );
+                        WHERE {self.serie_episode_columns[1]} IN (SELECT id FROM {temp_serie_season})
+                          AND id NOT IN (SELECT id FROM {temp_serie_episode});
                     """)
 
-					# Delete all outdated episode credits before inserting
-					cursor.execute(f"""
-						DELETE FROM {self.table_serie_episode_credits}
-						WHERE {self.serie_episode_credits_columns[1]} IN (
-							SELECT id FROM {temp_serie_episode}
-						);
-					""")
+                    cursor.execute(f"""
+                        DELETE FROM {self.table_serie_episode_credits}
+                        WHERE {self.serie_episode_credits_columns[1]} IN (SELECT id FROM {temp_serie_episode});
+                    """)
 
 					insert_into(
 						cursor=cursor,
