@@ -473,21 +473,21 @@ class SerieConfig(Config):
 					""")
 
 					cursor.execute(f"""
-						UPDATE {self.table_serie_episode} AS e
-						SET id = -e.id
-						FROM {temp_serie_episode} AS temp
-						WHERE e.tv_season_id = temp.tv_season_id
-							AND e.episode_number = temp.episode_number
-							AND e.id != temp.id;
-					""")
-
-					cursor.execute(f"""
 						UPDATE {self.table_serie_season} AS s
 						SET id = temp.id
 						FROM {temp_serie_season} AS temp
 						WHERE s.tv_series_id = temp.tv_series_id
 							AND s.season_number = temp.season_number
 							AND s.id < 0;
+					""")
+
+					cursor.execute(f"""
+						UPDATE {self.table_serie_episode} AS e
+						SET id = -e.id
+						FROM {temp_serie_episode} AS temp
+						WHERE e.tv_season_id = temp.tv_season_id
+							AND e.episode_number = temp.episode_number
+							AND e.id != temp.id;
 					""")
 
 					cursor.execute(f"""
