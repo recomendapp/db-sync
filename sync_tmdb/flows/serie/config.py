@@ -444,8 +444,28 @@ class SerieConfig(Config):
 
 					# Delete all outdated seasons before inserting
 					cursor.execute(f"""
+						DELETE FROM {self.table_serie_season}
+						WHERE {self.serie_season_columns[1]} IN (SELECT id FROM {temp_serie})
+							AND NOT EXISTS (
+								SELECT 1 FROM {temp_serie_season} temp
+								WHERE temp.tv_series_id = {self.table_serie_season}.tv_series_id
+								AND temp.season_number = {self.table_serie_season}.season_number
+							);
+					""")
+
+					cursor.execute(f"""
+						DELETE FROM {self.table_serie_episode}
+						WHERE {self.serie_episode_columns[1]} IN (SELECT id FROM {temp_serie_season})
+							AND NOT EXISTS (
+								SELECT 1 FROM {temp_serie_episode} temp
+								WHERE temp.tv_season_id = {self.table_serie_episode}.tv_season_id
+								AND temp.episode_number = {self.table_serie_episode}.episode_number
+							);
+					""")
+
+					cursor.execute(f"""
 						UPDATE {self.table_serie_season} AS s
-						SET id = temp.id
+						SET id = -s.id
 						FROM {temp_serie_season} AS temp
 						WHERE s.tv_series_id = temp.tv_series_id
 							AND s.season_number = temp.season_number
@@ -454,7 +474,7 @@ class SerieConfig(Config):
 
 					cursor.execute(f"""
 						UPDATE {self.table_serie_episode} AS e
-						SET id = temp.id
+						SET id = -e.id
 						FROM {temp_serie_episode} AS temp
 						WHERE e.tv_season_id = temp.tv_season_id
 							AND e.episode_number = temp.episode_number
@@ -462,9 +482,21 @@ class SerieConfig(Config):
 					""")
 
 					cursor.execute(f"""
-						DELETE FROM {self.table_serie_season}
-						WHERE {self.serie_season_columns[1]} IN (SELECT id FROM {temp_serie})
-							AND id NOT IN (SELECT id FROM {temp_serie_season});
+						UPDATE {self.table_serie_season} AS s
+						SET id = temp.id
+						FROM {temp_serie_season} AS temp
+						WHERE s.tv_series_id = temp.tv_series_id
+							AND s.season_number = temp.season_number
+							AND s.id < 0;
+					""")
+
+					cursor.execute(f"""
+						UPDATE {self.table_serie_episode} AS e
+						SET id = temp.id
+						FROM {temp_serie_episode} AS temp
+						WHERE e.tv_season_id = temp.tv_season_id
+							AND e.episode_number = temp.episode_number
+							AND e.id < 0;
 					""")
 
 					cursor.execute(f"""
@@ -475,12 +507,6 @@ class SerieConfig(Config):
 					cursor.execute(f"""
 						DELETE FROM {self.table_serie_season_translations}
 						WHERE {self.serie_season_translations_columns[0]} IN (SELECT id FROM {temp_serie_season});
-					""")
-
-					cursor.execute(f"""
-						DELETE FROM {self.table_serie_episode}
-						WHERE {self.serie_episode_columns[1]} IN (SELECT id FROM {temp_serie_season})
-							AND id NOT IN (SELECT id FROM {temp_serie_episode});
 					""")
 
 					cursor.execute(f"""
