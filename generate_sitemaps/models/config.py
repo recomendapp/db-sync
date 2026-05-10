@@ -2,7 +2,6 @@ from prefect import get_run_logger
 from prefect.blocks.system import Secret
 from .db_client import DBClient
 from .storage_client import StorageClient
-import os
 
 class Config:
     def __init__(self):
@@ -16,4 +15,4 @@ class Config:
         try:
             return Secret.load("web-app-url").get()
         except Exception as e:
-            raise ValueError(f"Postgres connection string not found: {e}")
+            raise ValueError(f"Web App URL secret not found: {e}")

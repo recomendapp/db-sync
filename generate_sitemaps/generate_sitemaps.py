@@ -1,5 +1,6 @@
 from prefect import flow, get_run_logger
 from .flows import (
+    generate_person_sitemaps,
     generate_movie_sitemaps,
     generate_tv_series_sitemaps,
     generate_user_sitemaps,
@@ -12,6 +13,7 @@ def generate_sitemaps(
     users: bool = True,
     playlists: bool = True,
     reviews: bool = True,
+    persons: bool = True,
     tv: bool = True,
     movies: bool = True
 ):
@@ -22,8 +24,10 @@ def generate_sitemaps(
         generate_user_sitemaps()
     if playlists:
         generate_playlist_sitemaps()
-    if reviews:
-        generate_review_sitemaps()
+    # if reviews:
+    #     generate_review_sitemaps()
+    if persons:
+        generate_person_sitemaps()
     if tv:
         generate_tv_series_sitemaps()
     if movies:

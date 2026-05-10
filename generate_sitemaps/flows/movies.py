@@ -4,41 +4,46 @@ from prefect.task_runners import ThreadPoolTaskRunner
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 from ..utils.slugify import slugify
-from ..utils.locales import SITEMAP_LOCALES, DEFAULT_LOCALE
+from ..utils.locales import DEFAULT_LOCALE
 import math
 
 MOVIE_PER_PAGE = 10000
 
+@task(name="cleanup_excess_movie_sitemaps", log_prints=True)
+def cleanup_excess_movie_sitemaps(config: Config, prefix: str, current_count: int):
+    config.storage_client.clean_excess_sitemaps(prefix, current_count)
+    config.logger.info(f"Cleaned up {prefix} sitemaps from index {current_count} onwards.")
+
 @task(cache_policy=None)
-def get_sitemap_media_movie_count(config: Config) -> int:
+def get_sitemap_movie_count(config: Config) -> int:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT COUNT(id) as count FROM tmdb_movie")
+            cursor.execute('SELECT COUNT(id) as count FROM tmdb."movie"')
             count = cursor.fetchone()[0]
             return math.ceil(count / MOVIE_PER_PAGE) if count else 0
 
 @task(cache_policy=None)
-def get_sitemap_media_movies(config: Config, page: int) -> list:
+def get_sitemap_movies(config: Config, page: int) -> list:
     offset = page * MOVIE_PER_PAGE
     
-    locales_for_query = [tuple(l.split('-')) for l in SITEMAP_LOCALES]
-    where_locale_clause = " OR ".join([f"(t.iso_639_1 = '{lang}' AND t.iso_3166_1 = '{country}')" for lang, country in locales_for_query])
-
+    lang, country = DEFAULT_LOCALE.split('-')
+    
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(f"""
-                SELECT
-                    m.id,
-                    m.original_title,
-                    COALESCE(
-                        (
-                            SELECT json_agg(json_build_object('iso_639_1', t.iso_639_1, 'iso_3166_1', t.iso_3166_1, 'title', t.title))
-                            FROM tmdb_movie_translations t
-                            WHERE t.movie_id = m.id AND ({where_locale_clause})
-                        ),
-                        '[]'::json
-                    ) as tmdb_movie_translations
-                FROM tmdb_movie m
+                SELECT 
+                    m.id, 
+                    m.original_title, 
+                    m.updated_at,
+                    (
+                        SELECT t.title
+                        FROM tmdb."movie_translation" t
+                        WHERE t.movie_id = m.id
+                          AND t.iso_639_1 = '{lang}'
+                          AND t.iso_3166_1 = '{country}'
+                        LIMIT 1
+                    ) as default_title
+                FROM tmdb."movie" m
                 ORDER BY m.id ASC
                 LIMIT {MOVIE_PER_PAGE} OFFSET {offset}
             """)
@@ -48,31 +53,21 @@ def get_sitemap_media_movies(config: Config, page: int) -> list:
 def process_sitemap_page(page_index: int):
     config = Config()
     logger = config.logger
-    movies = get_sitemap_media_movies(config, page_index)
+    movies = get_sitemap_movies(config, page_index)
     sitemap_entries = []
+    
     for movie_data in movies:
-        movie_id, original_title, translations_json = movie_data
+        movie_id, original_title, updated_at, default_title = movie_data
         
-        translations = {f"{t['iso_639_1']}-{t['iso_3166_1']}": t['title'] for t in translations_json}
-
-        default_title = translations.get(DEFAULT_LOCALE, original_title)
-        slug_val = slugify(default_title)
-        default_slug_url = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
-
-        language_urls = {}
-        for locale in SITEMAP_LOCALES:
-            title = translations.get(locale, original_title)
-            slug_val = slugify(title)
-            slug = f"{movie_id}{f'-{slug_val}' if slug_val else ''}"
-            url = f"{config.site_url}/film/{slug}" if locale == DEFAULT_LOCALE else f"{config.site_url}/{locale}/film/{slug}"
-            language_urls[locale] = url
+        final_title = default_title if default_title else original_title
+        
+        slug_val = slugify(final_title) if final_title else ""
+        slug = f"{movie_id}-{slug_val}" if slug_val else str(movie_id)
 
         sitemap_entries.append({
-            "url": f"{config.site_url}/film/{default_slug_url}",
+            "url": f"{config.site_url}/film/{slug}",
+            "lastModified": updated_at.isoformat() if updated_at else None,
             "priority": 0.8,
-            "alternates": {
-                "languages": language_urls,
-            },
         })
 
     sitemap_xml = build_sitemap(sitemap_entries)
@@ -84,15 +79,17 @@ def process_sitemap_page(page_index: int):
 def generate_movie_sitemaps():
     config = Config()
     logger = config.logger
-    logger.info("Generating movie sitemaps...")
+    logger.info("Generating movie sitemaps (Zero-Downtime)...")
 
-    count = get_sitemap_media_movie_count(config)
-    sitemap_indexes = [f"{config.sitemap_base_url}/films/{i}" for i in range(count)]
+    count = get_sitemap_movie_count(config)
 
+    sitemap_indexes = [f"{config.sitemap_base_url}/movies/{i}.xml.gz" for i in range(count)]
     sitemap_index_xml = build_sitemap_index(sitemap_indexes)
     gzipped_index = gzip_encode(sitemap_index_xml)
     config.storage_client.upload("movies/index.xml.gz", gzipped_index)
-    logger.info("Uploaded movies/index.xml.gz")
+    logger.info("Uploaded new movies/index.xml.gz")
+
+    cleanup_excess_movie_sitemaps(config, "movies/", count)
 
     if count > 0:
         futures = process_sitemap_page.map(range(count))

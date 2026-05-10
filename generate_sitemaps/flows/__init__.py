@@ -1,3 +1,4 @@
+from .persons import generate_person_sitemaps
 from .movies import generate_movie_sitemaps
 from .tv_series import generate_tv_series_sitemaps
 from .users import generate_user_sitemaps
