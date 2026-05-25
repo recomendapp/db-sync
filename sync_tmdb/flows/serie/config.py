@@ -219,9 +219,11 @@ class SerieConfig(Config):
 			csv["serie_videos"].clean_duplicates(conflict_columns=self.serie_videos_on_conflict)
 			csv["serie_credits"].clean_duplicates(conflict_columns=self.serie_credits_on_conflict)
 			csv["serie_roles"].clean_duplicates(conflict_columns=self.serie_roles_on_conflict)
+			csv["serie_season"].clean_duplicates(conflict_columns=self.serie_season_on_conflict)
 			csv["serie_season"].clean_duplicates(conflict_columns=["tv_series_id", "season_number"])
 			csv["serie_season_credits"].clean_duplicates(conflict_columns=self.serie_season_credits_on_conflict)
 			csv["serie_season_translations"].clean_duplicates(conflict_columns=self.serie_season_translations_on_conflict)
+			csv["serie_episode"].clean_duplicates(conflict_columns=self.serie_episode_on_conflict)
 			csv["serie_episode"].clean_duplicates(conflict_columns=["tv_season_id", "episode_number"])
 			csv["serie_episode_credits"].clean_duplicates(conflict_columns=self.serie_episode_credits_on_conflict)
 
