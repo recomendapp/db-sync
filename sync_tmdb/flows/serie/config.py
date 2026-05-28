@@ -484,9 +484,10 @@ class SerieConfig(Config):
 					cursor.execute(f"""
 						UPDATE {self.table_serie_episode} AS e
 						SET id = -e.id
-						FROM {temp_serie_season} AS ts
-						WHERE e.tv_season_id = ts.id;
-					""")
+						FROM {temp_serie_season} AS temp
+            WHERE e.tv_season_id = temp.tv_season_id 
+              AND e.episode_number = temp.episode_number;
+          """)
 
 					cursor.execute(f"""
 						UPDATE {self.table_serie_episode} AS e
