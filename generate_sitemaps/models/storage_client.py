@@ -28,7 +28,8 @@ class StorageClient:
             Bucket=self.bucket,
             Key=path,
             Body=content,
-            ContentType='application/gzip'
+            ContentType='application/xml',
+            ContentEncoding='gzip'
         )
 
     def clean_excess_sitemaps(self, prefix: str, current_count: int):
