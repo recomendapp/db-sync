@@ -8,9 +8,11 @@ import math
 
 PLAYLIST_PER_PAGE = 10000
 
-def compute_playlist_score(likes_count: int, saved_count: int, items_count: int) -> float:
-    """Score composite pour une playlist, pondéré par signal de qualité."""
-    return (likes_count or 0) * 3 + (saved_count or 0) * 2 + (items_count or 0) * 0.5
+def compute_playlist_score(likes_count: int, saved_count: int) -> float:
+    """Score composite pour une playlist, basé uniquement sur l'engagement
+    (likes/saves) — le volume d'items (items_count) est volontairement exclu
+    car il ne reflète pas la qualité perçue de la playlist."""
+    return (likes_count or 0) * 3 + (saved_count or 0) * 2
 
 @task(name="cleanup_excess_playlist_sitemaps", log_prints=True)
 def cleanup_excess_playlist_sitemaps(config: Config, prefix: str, current_count: int):
@@ -21,7 +23,11 @@ def cleanup_excess_playlist_sitemaps(config: Config, prefix: str, current_count:
 def get_sitemap_playlist_count(config: Config) -> int:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT COUNT(id) as count FROM playlist WHERE visibility = 'public'")
+            cursor.execute("""
+                SELECT COUNT(id) as count
+                FROM playlist
+                WHERE visibility = 'public' AND items_count > 0
+            """)
             count = cursor.fetchone()[0]
             return math.ceil(count / PLAYLIST_PER_PAGE) if count else 0
 
@@ -31,11 +37,11 @@ def get_max_playlist_score(config: Config) -> float:
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT COALESCE(
-                    MAX(likes_count * 3 + saved_count * 2 + items_count * 0.5),
+                    MAX(likes_count * 3 + saved_count * 2),
                     0
                 )
                 FROM playlist
-                WHERE visibility = 'public'
+                WHERE visibility = 'public' AND items_count > 0
             """)
             return cursor.fetchone()[0] or 0.0
 
@@ -45,9 +51,9 @@ def get_sitemap_playlists(config: Config, page: int) -> list:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(f"""
-                SELECT id, updated_at, likes_count, saved_count, items_count
+                SELECT id, updated_at, likes_count, saved_count
                 FROM playlist
-                WHERE visibility = 'public'
+                WHERE visibility = 'public' AND items_count > 0
                 ORDER BY id ASC
                 LIMIT {PLAYLIST_PER_PAGE} OFFSET {offset}
             """)
@@ -61,8 +67,8 @@ def process_sitemap_page(page_index: int, max_score: float):
     sitemap_entries = []
 
     for playlist_data in playlists:
-        playlist_id, updated_at, likes_count, saved_count, items_count = playlist_data
-        score = compute_playlist_score(likes_count, saved_count, items_count)
+        playlist_id, updated_at, likes_count, saved_count = playlist_data
+        score = compute_playlist_score(likes_count, saved_count)
         sitemap_entries.append({
             "url": f"{config.site_url}/playlist/{playlist_id}",
             "lastModified": updated_at.isoformat() if updated_at else None,
