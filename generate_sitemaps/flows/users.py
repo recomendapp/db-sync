@@ -1,8 +1,9 @@
-from prefect import flow, task
+from prefect import flow, task, unmapped
 from prefect.futures import wait
 from prefect.task_runners import ThreadPoolTaskRunner
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
+from ..utils.priority import compute_priority
 import math
 
 USER_PER_PAGE = 10000
@@ -26,12 +27,23 @@ def get_sitemap_user_count(config: Config) -> int:
             return math.ceil(count / USER_PER_PAGE) if count else 0
 
 @task(cache_policy=None)
+def get_max_user_followers(config: Config) -> float:
+    with config.db_client.connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT COALESCE(MAX(followers_count), 0)
+                FROM profile
+                WHERE is_private = false
+            """)
+            return cursor.fetchone()[0] or 0.0
+
+@task(cache_policy=None)
 def get_sitemap_users(config: Config, page: int) -> list:
     offset = page * USER_PER_PAGE
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute(f"""
-                SELECT u.username, u.updated_at 
+                SELECT u.username, u.updated_at, p.followers_count
                 FROM auth."user" u
                 JOIN profile p ON u.id = p.id
                 WHERE p.is_private = false
@@ -41,20 +53,20 @@ def get_sitemap_users(config: Config, page: int) -> list:
             return cursor.fetchall()
 
 @task(cache_policy=None)
-def process_sitemap_page(page_index: int):
+def process_sitemap_page(page_index: int, max_followers: float):
     config = Config()
     logger = config.logger
     users = get_sitemap_users(config, page_index)
     sitemap_entries = []
-    
+
     for user_data in users:
-        username, updated_at = user_data
+        username, updated_at, followers_count = user_data
         sitemap_entries.append({
             "url": f"{config.site_url}/@{username}",
-            "lastModified": updated_at.isoformat(),
-            "priority": 0.6,
+            "lastModified": updated_at.isoformat() if updated_at else None,
+            "priority": compute_priority(followers_count, max_followers),
         })
-    
+
     sitemap_xml = build_sitemap(sitemap_entries)
     gzipped_sitemap = gzip_encode(sitemap_xml)
     config.storage_client.upload(f"users/{page_index}.xml.gz", gzipped_sitemap)
@@ -67,9 +79,10 @@ def generate_user_sitemaps():
     logger.info("Generating user sitemaps (Zero-Downtime)...")
 
     count = get_sitemap_user_count(config)
+    max_followers = get_max_user_followers(config)
 
     if count > 0:
-        futures = process_sitemap_page.map(range(count))
+        futures = process_sitemap_page.map(range(count), max_followers=unmapped(max_followers))
         wait(futures)
 
     cleanup_excess_user_sitemaps(config, "users/", count)
@@ -79,5 +92,4 @@ def generate_user_sitemaps():
     gzipped_index = gzip_encode(sitemap_index_xml)
     config.storage_client.upload("users/index.xml.gz", gzipped_index)
     logger.info("Uploaded new users/index.xml.gz")
-
     logger.info("Finished user sitemaps.")
