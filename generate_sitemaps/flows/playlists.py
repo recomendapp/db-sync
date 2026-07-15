@@ -71,7 +71,7 @@ def process_sitemap_page(page_index: int, max_score: float):
         score = compute_playlist_score(likes_count, saved_count)
         sitemap_entries.append({
             "url": f"{config.site_url}/playlist/{playlist_id}",
-            "lastModified": updated_at.isoformat() if updated_at else None,
+            "lastModified": updated_at.date().isoformat() if updated_at else None,
             "priority": compute_priority(score, max_score),
         })
 

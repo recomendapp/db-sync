@@ -63,7 +63,7 @@ def process_sitemap_page(page_index: int, max_followers: float):
         username, updated_at, followers_count = user_data
         sitemap_entries.append({
             "url": f"{config.site_url}/@{username}",
-            "lastModified": updated_at.isoformat() if updated_at else None,
+            "lastModified": updated_at.date().isoformat() if updated_at else None,
             "priority": compute_priority(followers_count, max_followers),
         })
 
