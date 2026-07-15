@@ -85,16 +85,16 @@ def generate_tv_series_sitemaps():
 
     count = get_sitemap_tv_series_count(config)
 
+    if count > 0:
+        futures = process_sitemap_page.map(range(count))
+        wait(futures)
+
+    cleanup_excess_tv_series_sitemaps(config, "tv-series/", count)
+
     sitemap_indexes = [f"{config.sitemap_base_url}/tv-series/{i}.xml.gz" for i in range(count)]
     sitemap_index_xml = build_sitemap_index(sitemap_indexes)
     gzipped_index = gzip_encode(sitemap_index_xml)
     config.storage_client.upload("tv-series/index.xml.gz", gzipped_index)
     logger.info("Uploaded new tv-series/index.xml.gz")
-
-    cleanup_excess_tv_series_sitemaps(config, "tv-series/", count)
-
-    if count > 0:
-        futures = process_sitemap_page.map(range(count))
-        wait(futures)
 
     logger.info("Finished TV series sitemaps.")

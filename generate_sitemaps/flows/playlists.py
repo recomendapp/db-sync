@@ -61,16 +61,16 @@ def generate_playlist_sitemaps():
 
     count = get_sitemap_playlist_count(config)
 
+    if count > 0:
+        futures = process_sitemap_page.map(range(count))
+        wait(futures)
+
+    cleanup_excess_playlist_sitemaps(config, "playlists/", count)
+
     sitemap_indexes = [f"{config.sitemap_base_url}/playlists/{i}.xml.gz" for i in range(count)]
     sitemap_index_xml = build_sitemap_index(sitemap_indexes)
     gzipped_index = gzip_encode(sitemap_index_xml)
     config.storage_client.upload("playlists/index.xml.gz", gzipped_index)
     logger.info("Uploaded new playlists/index.xml.gz")
-
-    cleanup_excess_playlist_sitemaps(config, "playlists/", count)
-
-    if count > 0:
-        futures = process_sitemap_page.map(range(count))
-        wait(futures)
 
     logger.info("Finished playlist sitemaps.")

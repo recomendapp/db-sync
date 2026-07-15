@@ -139,14 +139,6 @@ def generate_review_sitemaps():
     movie_review_count = get_sitemap_review_movie_count(config)
     tv_review_count = get_sitemap_review_tv_series_count(config)
 
-    movie_review_sitemaps = [f"{config.sitemap_base_url}/reviews/movie/{i}" for i in range(movie_review_count)]
-    tv_review_sitemaps = [f"{config.sitemap_base_url}/reviews/tv-series/{i}" for i in range(tv_review_count)]
-
-    review_index_xml = build_sitemap_index(movie_review_sitemaps + tv_review_sitemaps)
-    gzipped_index = gzip_encode(review_index_xml)
-    config.storage_client.upload("reviews/index.xml.gz", gzipped_index)
-    logger.info("  - Uploaded reviews/index.xml.gz")
-
     futures = []
     if movie_review_count > 0:
         futures.extend(process_movie_review_page.map(range(movie_review_count)))
@@ -156,5 +148,13 @@ def generate_review_sitemaps():
 
     if futures:
         wait(futures)
+
+    movie_review_sitemaps = [f"{config.sitemap_base_url}/reviews/movie/{i}" for i in range(movie_review_count)]
+    tv_review_sitemaps = [f"{config.sitemap_base_url}/reviews/tv-series/{i}" for i in range(tv_review_count)]
+
+    review_index_xml = build_sitemap_index(movie_review_sitemaps + tv_review_sitemaps)
+    gzipped_index = gzip_encode(review_index_xml)
+    config.storage_client.upload("reviews/index.xml.gz", gzipped_index)
+    logger.info("  - Uploaded reviews/index.xml.gz")
 
     logger.info("Finished review sitemaps.")

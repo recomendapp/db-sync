@@ -83,16 +83,16 @@ def generate_movie_sitemaps():
 
     count = get_sitemap_movie_count(config)
 
+    if count > 0:
+        futures = process_sitemap_page.map(range(count))
+        wait(futures)
+
+    cleanup_excess_movie_sitemaps(config, "movies/", count)
+
     sitemap_indexes = [f"{config.sitemap_base_url}/movies/{i}.xml.gz" for i in range(count)]
     sitemap_index_xml = build_sitemap_index(sitemap_indexes)
     gzipped_index = gzip_encode(sitemap_index_xml)
     config.storage_client.upload("movies/index.xml.gz", gzipped_index)
     logger.info("Uploaded new movies/index.xml.gz")
-
-    cleanup_excess_movie_sitemaps(config, "movies/", count)
-
-    if count > 0:
-        futures = process_sitemap_page.map(range(count))
-        wait(futures)
 
     logger.info("Finished movie sitemaps.")

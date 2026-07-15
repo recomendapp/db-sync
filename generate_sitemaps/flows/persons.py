@@ -72,16 +72,16 @@ def generate_person_sitemaps():
 
     count = get_sitemap_person_count(config)
 
+    if count > 0:
+      futures = process_sitemap_page.map(range(count))
+      wait(futures)
+
+    cleanup_excess_person_sitemaps(config, "persons/", count)
+
     sitemap_indexes = [f"{config.sitemap_base_url}/persons/{i}.xml.gz" for i in range(count)]
     sitemap_index_xml = build_sitemap_index(sitemap_indexes)
     gzipped_index = gzip_encode(sitemap_index_xml)
     config.storage_client.upload("persons/index.xml.gz", gzipped_index)
     logger.info("Uploaded new persons/index.xml.gz")
-
-    cleanup_excess_person_sitemaps(config, "persons/", count)
-
-    if count > 0:
-        futures = process_sitemap_page.map(range(count))
-        wait(futures)
 
     logger.info("Finished person sitemaps.")
