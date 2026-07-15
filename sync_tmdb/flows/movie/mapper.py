@@ -20,6 +20,7 @@ class Mapper:
 				"vote_average": movie.get("vote_average", 0),
 				"vote_count": movie.get("vote_count", 0),
 				"belongs_to_collection": movie.get("belongs_to_collection", {}).get("id") if movie.get("belongs_to_collection") and movie.get("belongs_to_collection").get("id") in config.db_collections else None,
+				"updated_at": config.date,
 			}
 		]
 		df = pd.DataFrame(movie_data)

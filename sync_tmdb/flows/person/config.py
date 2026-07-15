@@ -22,7 +22,7 @@ class PersonConfig(Config):
 		self.missing_persons: set = None
 
 		# Columns
-		self.person_columns: list[str] = ["id", "adult", "birthday", "deathday", "gender", "homepage", "imdb_id", "known_for_department", "name", "place_of_birth", "popularity"]
+		self.person_columns: list[str] = ["id", "adult", "birthday", "deathday", "gender", "homepage", "imdb_id", "known_for_department", "name", "place_of_birth", "popularity", "updated_at"]
 		self.person_translation_columns: list[str] = ["person_id", "biography", "iso_639_1", "iso_3166_1"]
 		self.person_image_columns: list[str] = ["person_id", "file_path", "aspect_ratio", "height", "width", "vote_average", "vote_count"]
 		self.person_external_id_columns: list[str] = ["person_id", "source", "value"]

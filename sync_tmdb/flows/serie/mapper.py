@@ -22,6 +22,7 @@ class Mapper:
                 "number_of_seasons": serie.get("number_of_seasons", 0),
                 "first_air_date": serie.get("first_air_date", None),
                 "last_air_date": serie.get("last_air_date", None),
+                "updated_at": config.date,
             }
         ]
         df = pd.DataFrame(serie_data)

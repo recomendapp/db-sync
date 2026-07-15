@@ -3,7 +3,7 @@ from .config import PersonConfig as Config
 
 class Mapper:
 	@staticmethod
-	def person(person: dict) -> pd.DataFrame:
+	def person(config: Config, person: dict) -> pd.DataFrame:
 		person_data = [
 			{
 				"id": person["id"],
@@ -16,7 +16,8 @@ class Mapper:
 				"known_for_department": person.get("known_for_department", None),
 				"name": person.get("name", None),
 				"place_of_birth": person.get("place_of_birth", None),
-				"popularity": person.get("popularity", None)
+				"popularity": person.get("popularity", None),
+				"updated_at": config.date,
 			}
 		]
 		return pd.DataFrame(person_data)

@@ -90,7 +90,7 @@ def process_missing_persons(config: PersonConfig):
 				for person_details_response in persons_details_futures:
 					person_details = person_details_response.result()
 					if person_details is not None:
-						person_csv.append(rows_data=Mapper.person(person=person_details))
+						person_csv.append(rows_data=Mapper.person(config=config,person=person_details))
 						person_translation_csv.append(rows_data=Mapper.person_translation(person=person_details))
 						person_image_csv.append(rows_data=Mapper.person_image(person=person_details))
 						person_external_id_csv.append(rows_data=Mapper.person_external_id(person=person_details))
