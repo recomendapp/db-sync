@@ -5,7 +5,8 @@ from .flows import (
     generate_tv_series_sitemaps,
     generate_user_sitemaps,
     generate_playlist_sitemaps,
-    generate_review_sitemaps
+    generate_review_sitemaps,
+    generate_sitemap_index
 )
 
 @flow(name="generate_sitemaps", log_prints=True)
@@ -32,5 +33,7 @@ def generate_sitemaps(
         generate_tv_series_sitemaps()
     if movies:
         generate_movie_sitemaps()
+
+    generate_sitemap_index()
 
     logger.info("All selected sitemaps generated.")

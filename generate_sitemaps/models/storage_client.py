@@ -7,7 +7,7 @@ class StorageClient:
         access_key = self._get_secret("s3-access-key")
         secret_key = self._get_secret("s3-secret-key")
         self.bucket = self._get_secret("s3-sitemap-bucket")
-        
+
         # Boto3 Client for MinIO
         self.client = boto3.client(
             's3',
@@ -32,15 +32,31 @@ class StorageClient:
             ContentEncoding='gzip'
         )
 
+    def list_files(self, prefix: str) -> list[str]:
+        """
+        List all S3 keys under a given prefix,
+        excluding 'index.xml.gz' files (these are sub-indexes, not content sitemaps).
+        Handles pagination (>1000 objects).
+        """
+        keys = []
+        paginator = self.client.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            for obj in page.get('Contents', []):
+                key = obj['Key']
+                filename = key.split('/')[-1]
+                if filename == 'index.xml.gz':
+                    continue
+                keys.append(key)
+        return keys
+
     def clean_excess_sitemaps(self, prefix: str, current_count: int):
         """
         Deletes sitemap files in the specified prefix that have an index >= current_count.
         """
         response = self.client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
-        
+
         if 'Contents' not in response:
             return
-
         objects_to_delete = []
         for obj in response['Contents']:
             key = obj['Key']
@@ -48,13 +64,12 @@ class StorageClient:
                 filename = key.split('/')[-1]
                 if filename == 'index.xml.gz':
                     continue
-                
+
                 file_index = int(filename.split('.')[0])
                 if file_index >= current_count:
                     objects_to_delete.append({'Key': key})
             except ValueError:
                 pass
-
         if objects_to_delete:
             self.client.delete_objects(
                 Bucket=self.bucket,
