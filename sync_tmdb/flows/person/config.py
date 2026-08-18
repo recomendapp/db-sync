@@ -1,5 +1,6 @@
 from datetime import date
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 import uuid
 from ...models.config import Config
 from ...models.csv_file import CSVFile
@@ -42,7 +43,7 @@ class PersonConfig(Config):
 		self.person_external_id_on_conflict_update: list[str] = [col for col in self.person_external_id_columns if col not in self.person_external_id_on_conflict]
 		self.person_also_known_as_on_conflict_update: list[str] = [col for col in self.person_also_known_as_columns if col not in self.person_also_known_as_on_conflict]
 
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def prune(self):
 		"""Prune the extra persons from the database and Typesense"""
 		# DB
@@ -73,7 +74,7 @@ class PersonConfig(Config):
 			raise ValueError(f"Failed to prune extra persons from Typesense: {e}")
 
 
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def push(self, person_csv: CSVFile, person_translation_csv: CSVFile, person_image_csv: CSVFile, person_external_id_csv: CSVFile, person_also_known_as_csv: CSVFile):
 		"""Push the persons to the database"""
 		conn = self.db_client.get_connection()

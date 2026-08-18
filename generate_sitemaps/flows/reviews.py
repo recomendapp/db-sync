@@ -1,6 +1,8 @@
 from prefect import flow, task
 from prefect.futures import wait
 from prefect.task_runners import ThreadPoolTaskRunner
+from prefect.cache_policies import NO_CACHE
+
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 from ..utils.slugify import slugify
@@ -10,7 +12,7 @@ import json
 
 REVIEW_PER_PAGE = 10000
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_sitemap_review_movie_count(config: Config) -> int:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
@@ -18,7 +20,7 @@ def get_sitemap_review_movie_count(config: Config) -> int:
             count = cursor.fetchone()[0]
             return math.ceil(count / REVIEW_PER_PAGE) if count else 0
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_sitemap_review_tv_series_count(config: Config) -> int:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
@@ -26,7 +28,7 @@ def get_sitemap_review_tv_series_count(config: Config) -> int:
             count = cursor.fetchone()[0]
             return math.ceil(count / REVIEW_PER_PAGE) if count else 0
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_sitemap_reviews_movie(config: Config, page: int) -> list:
     offset = page * REVIEW_PER_PAGE
     iso_639_1, iso_3166_1 = DEFAULT_LOCALE.split("-")
@@ -55,7 +57,7 @@ def get_sitemap_reviews_movie(config: Config, page: int) -> list:
             """)
             return cursor.fetchall()
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_sitemap_reviews_tv_series(config: Config, page: int) -> list:
     offset = page * REVIEW_PER_PAGE
     iso_639_1, iso_3166_1 = DEFAULT_LOCALE.split("-")
@@ -84,7 +86,7 @@ def get_sitemap_reviews_tv_series(config: Config, page: int) -> list:
             """)
             return cursor.fetchall()
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def process_movie_review_page(page_index: int):
     config = Config()
     logger = config.logger
@@ -107,7 +109,7 @@ def process_movie_review_page(page_index: int):
     config.storage_client.upload(f"reviews/movie/{page_index}.xml.gz", gzipped_sitemap)
     logger.info(f"  - Uploaded reviews/movie/{page_index}.xml.gz")
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def process_tv_series_review_page(page_index: int):
     config = Config()
     logger = config.logger

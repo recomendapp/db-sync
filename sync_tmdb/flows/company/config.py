@@ -1,5 +1,6 @@
 from datetime import date
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 import uuid
 from ...models.config import Config
 from ...models.csv_file import CSVFile
@@ -34,7 +35,7 @@ class CompanyConfig(Config):
 		self.company_image_on_conflict_update: list[str] = [col for col in self.company_image_columns if col not in self.company_image_on_conflict]
 		self.company_alternative_name_on_conflict_update: list[str] = [col for col in self.company_alternative_name_columns if col not in self.company_alternative_name_on_conflict]
 	
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def prune(self):
 		"""Prune the extra companies from the database"""
 		conn = self.db_client.get_connection()
@@ -53,7 +54,7 @@ class CompanyConfig(Config):
 		finally:
 			self.db_client.return_connection(conn)
 
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def push(self, company_csv: CSVFile, company_image_csv: CSVFile, company_alternative_name_csv: CSVFile):
 		"""Push the companies to the database"""
 		conn = self.db_client.get_connection()

@@ -1,15 +1,16 @@
 from prefect import flow, task, get_run_logger
+from prefect.cache_policies import NO_CACHE
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap_index, gzip_encode
 
 CATEGORIES = ["movies", "tv-series", "persons", "users", "playlists"]
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def collect_category_sitemaps(config: Config, category: str) -> list[str]:
     keys = config.storage_client.list_files(prefix=f"{category}/")
     return [f"{config.sitemap_base_url}/{key}" for key in keys]
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def build_and_upload_master_index(config: Config, all_sitemaps: list[str]):
     logger = config.logger
 

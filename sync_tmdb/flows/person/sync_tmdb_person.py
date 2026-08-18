@@ -9,6 +9,7 @@ import gc
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
+from prefect.cache_policies import NO_CACHE
 
 from .config import PersonConfig
 from .mapper import Mapper
@@ -39,7 +40,7 @@ def get_tmdb_persons_changed(config: PersonConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed persons: {e}")
 
-@task(cache_policy=None, log_prints=False)
+@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 	try:
 		# Get persons details from TMDB in the default language and the extra languages

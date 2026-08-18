@@ -1,6 +1,8 @@
 from prefect import flow, task, unmapped
 from prefect.futures import wait
 from prefect.task_runners import ThreadPoolTaskRunner
+from prefect.cache_policies import NO_CACHE
+
 from ..models.config import Config
 from ..utils.sitemap import build_sitemap, build_sitemap_index, gzip_encode
 from ..utils.slugify import slugify
@@ -10,13 +12,13 @@ import math
 
 TV_SERIES_PER_PAGE = 10000
 
-@task(name="cleanup_excess_tv_series_sitemaps", log_prints=True)
+@task(name="cleanup_excess_tv_series_sitemaps", log_prints=True, cache_policy=NO_CACHE)
 def cleanup_excess_tv_series_sitemaps(config: Config, prefix: str, current_count: int):
     """Supprime les fichiers XML obsolètes si le nombre de pages a diminué."""
     config.storage_client.clean_excess_sitemaps(prefix, current_count)
     config.logger.info(f"Cleaned up {prefix} sitemaps from index {current_count} onwards.")
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_sitemap_tv_series_count(config: Config) -> int:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
@@ -24,14 +26,14 @@ def get_sitemap_tv_series_count(config: Config) -> int:
             count = cursor.fetchone()[0]
             return math.ceil(count / TV_SERIES_PER_PAGE) if count else 0
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_max_tv_series_popularity(config: Config) -> float:
     with config.db_client.connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute('SELECT COALESCE(MAX(popularity), 0) FROM tmdb."tv_series"')
             return cursor.fetchone()[0] or 0.0
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def get_sitemap_tv_series(config: Config, page: int) -> list:
     offset = page * TV_SERIES_PER_PAGE
 
@@ -59,7 +61,7 @@ def get_sitemap_tv_series(config: Config, page: int) -> list:
             """)
             return cursor.fetchall()
 
-@task(cache_policy=None)
+@task(cache_policy=NO_CACHE)
 def process_sitemap_page(page_index: int, max_popularity: float):
     config = Config()
     logger = config.logger

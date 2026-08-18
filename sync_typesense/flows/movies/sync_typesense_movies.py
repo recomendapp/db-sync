@@ -1,5 +1,6 @@
 from prefect import flow, task
 from prefect.logging import get_run_logger
+from prefect.cache_policies import NO_CACHE
 
 from pathlib import Path
 import json
@@ -55,7 +56,7 @@ LEFT JOIN LATERAL (
 ORDER BY m.id
 """
 
-@task
+@task(cache_policy=NO_CACHE)
 def manage_schema(ts_client: TypesenseClient):
     logger = get_run_logger()
     logger.info(f"Managing schema for '{COLLECTION_NAME}' collection...")
@@ -98,7 +99,7 @@ def manage_schema(ts_client: TypesenseClient):
         ts_client.client.collections.create(file_schema)
         logger.info(f"Collection '{COLLECTION_NAME}' created.")
 
-@task
+@task(cache_policy=NO_CACHE)
 def sync_data(db_client: DBClient, ts_client: TypesenseClient):
     logger = get_run_logger()
     logger.info("Starting data synchronization from PostgreSQL to Typesense...")
@@ -132,7 +133,7 @@ def sync_data(db_client: DBClient, ts_client: TypesenseClient):
     logger.info(f"Finished upserting {total_docs} documents from PostgreSQL.")
     return db_ids
 
-@task
+@task(cache_policy=NO_CACHE)
 def get_typesense_ids(ts_client: TypesenseClient) -> set:
     logger = get_run_logger()
     logger.info("Fetching all document IDs from Typesense...")
@@ -153,7 +154,7 @@ def get_typesense_ids(ts_client: TypesenseClient) -> set:
     logger.info(f"Found {len(ts_ids)} documents in Typesense.")
     return ts_ids
 
-@task
+@task(cache_policy=NO_CACHE)
 def delete_stale_documents(ts_client: TypesenseClient, db_ids: set, ts_ids: set):
     logger = get_run_logger()
     

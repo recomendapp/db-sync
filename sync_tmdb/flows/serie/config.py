@@ -1,5 +1,6 @@
 from datetime import date
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 import uuid
 from ...models.config import Config
 from ...models.csv_file import CSVFile
@@ -147,7 +148,7 @@ class SerieConfig(Config):
 		self.serie_episode_on_conflict_update: list[str] = [col for col in self.serie_episode_columns if col not in self.serie_episode_on_conflict]
 		self.serie_episode_credits_on_conflict_update: list[str] = [col for col in self.serie_episode_credits_columns if col not in self.serie_episode_credits_on_conflict]
 	
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def get_db_data(self):
 		"""Get the data from the database"""
 		try:
@@ -167,7 +168,7 @@ class SerieConfig(Config):
 			self.db_persons = set([item[0] for item in db_persons])
 		except Exception as e:
 			raise ValueError(f"Failed to get the data from the database: {e}")
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def prune(self):
 		"""Prune the extra series from the database and Typesense"""
 		# DB
@@ -196,7 +197,7 @@ class SerieConfig(Config):
 		except Exception as e:
 			raise ValueError(f"Failed to prune extra series from Typesense: {e}")
 
-	@task(cache_policy=None)
+	@task(cache_policy=NO_CACHE)
 	def push(self, csv: dict[str, CSVFile]):
 		"""Push the series to the database"""
 		conn = self.db_client.get_connection()

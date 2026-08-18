@@ -9,6 +9,7 @@ import gc
 # ---------------------------------- Prefect --------------------------------- #
 from prefect import flow, task
 from prefect.logging import get_run_logger
+from prefect.cache_policies import NO_CACHE
 
 from .config import NetworkConfig
 from .mapper import Mapper
@@ -31,7 +32,7 @@ def get_db_networks(config: NetworkConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=None, log_prints=False)
+@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_network_details(config: NetworkConfig, network_id: int) -> dict:
 	try:
 		network_details = config.tmdb_client.request(f"network/{network_id}", {"append_to_response": "alternative_names,images"})
