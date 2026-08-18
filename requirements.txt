@@ -1,0 +1,6 @@
+prefect>=3.4.0
+more-itertools
+psycopg2-binary
+pandas
+typesense
+boto3
