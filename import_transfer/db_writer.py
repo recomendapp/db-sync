@@ -103,3 +103,46 @@ def insert_staging_bookmark(
                 (import_job_id, raw_title, raw_year, movie_id, match_status),
             )
             conn.commit()
+
+
+def insert_staging_playlist(
+    db: DBClient,
+    import_job_id: str,
+    title: str,
+    description: str | None,
+) -> int:
+    with db.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO import_job_playlist (import_job_id, title, description)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (import_job_id, title, description),
+            )
+            staging_id = cur.fetchone()[0]
+            conn.commit()
+            return staging_id
+
+
+def insert_staging_playlist_item(
+    db: DBClient,
+    staging_playlist_id: int,
+    raw_title: str,
+    raw_year: int | None,
+    movie_id: int | None,
+    source_order: int,
+) -> None:
+    match_status = "matched" if movie_id else "unmatched"
+    with db.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO import_job_playlist_item
+                    (import_job_playlist_id, raw_title, raw_year, type, movie_id, match_status, source_order)
+                VALUES (%s, %s, %s, 'movie', %s, %s, %s)
+                """,
+                (staging_playlist_id, raw_title, raw_year, movie_id, match_status, source_order),
+            )
+            conn.commit()
