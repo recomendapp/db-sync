@@ -97,3 +97,24 @@ deployments:
     work_queue_name:
   concurrency_limit:
   enforce_parameter_schema: true
+
+- name: run_import
+  version: 1.0.0
+  tags:
+  - imports
+  description: Parse and stage a user-uploaded provider export (Letterboxd, ...) for review
+  schedules: []
+  entrypoint: import_transfer/run_import.py:run_import
+  parameters: {}
+  work_pool:
+    name: kube
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: psycopg2-binary pandas boto3 requests typesense
+      memory_request: "1Gi"
+      cpu_request: "500m"
+      memory_limit: "2Gi"
+      cpu_limit: "1"
+    work_queue_name:
+  concurrency_limit: 5
+  enforce_parameter_schema: true
