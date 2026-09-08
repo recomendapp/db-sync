@@ -466,6 +466,29 @@ class SerieConfig(Config):
 							);
 					""")
 
+					# A season that vanished from TMDB gets tombstoned (id negated) instead of
+					# deleted, to keep it around for user ratings. If it never reappeared, a
+					# later sync could still insert a fresh positive row for the same TMDB id
+					# (e.g. once the episode/season DELETE above stops matching it), leaving a
+					# stale tombstone alongside the live row. Drop that stale duplicate now,
+					# before it collides with the negation below.
+					cursor.execute(f"""
+              DELETE FROM {self.table_serie_season} AS neg
+              USING {self.table_serie_season} AS pos
+              WHERE neg.id < 0
+                AND pos.id = -neg.id;
+          """)
+
+					# Revive any remaining tombstoned seasons that have reappeared in the
+					# incoming TMDB data, so we don't create a duplicate positive row for
+					# the same TMDB season id (which would later collide when re-negating).
+					cursor.execute(f"""
+              UPDATE {self.table_serie_season} AS s
+              SET id = -s.id
+              FROM {temp_serie_season} AS temp
+              WHERE s.id = -temp.id;
+          """)
+
 					cursor.execute(f"""
               UPDATE {self.table_serie_season} AS s
               SET id = -s.id
@@ -481,6 +504,21 @@ class SerieConfig(Config):
               WHERE s.tv_series_id = temp.tv_series_id
                   AND s.season_number = temp.season_number
                   AND s.id < 0;
+          """)
+
+					# Same cleanup + revival as above, but for tombstoned episodes.
+					cursor.execute(f"""
+              DELETE FROM {self.table_serie_episode} AS neg
+              USING {self.table_serie_episode} AS pos
+              WHERE neg.id < 0
+                AND pos.id = -neg.id;
+          """)
+
+					cursor.execute(f"""
+              UPDATE {self.table_serie_episode} AS e
+              SET id = -e.id
+              FROM {temp_serie_episode} AS temp
+              WHERE e.id = -temp.id;
           """)
 
 					cursor.execute(f"""
