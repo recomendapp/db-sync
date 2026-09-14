@@ -334,18 +334,27 @@ class Mapper:
     def serie_season(config: Config, serie: dict) -> pd.DataFrame:
         serieId = serie["id"]
         seasons = serie.get("seasons", [])
-        serie_seasons_data = [
-            {
-                "id": season["id"],
-                "tv_series_id": serieId,
-                "season_number": season["season_number"],
-                "episode_count": len(season.get("episodes", [])),
-                "vote_average": season.get("vote_average", 0),
-                "vote_count": season.get("vote_count", 0),
-                "poster_path": nullify(season.get("poster_path", None), ""),
-            }
-            for season in seasons
-        ]
+        serie_seasons_data = []
+
+        for season in seasons:
+            season_number = season["season_number"]
+            if not isinstance(season_number, int) or not (0 <= season_number <= 100_000):
+                config.logger.warning(
+                    f"Implausible season_number {season_number!r} for season "
+                    f"{season.get('id')} of serie {serieId}, clamping to sentinel"
+                )
+                season_number = 2_000_000_000
+            serie_seasons_data.append(
+                {
+                    "id": season["id"],
+                    "tv_series_id": serieId,
+                    "season_number": season_number,
+                    "episode_count": len(season.get("episodes", [])),
+                    "vote_average": season.get("vote_average", 0),
+                    "vote_count": season.get("vote_count", 0),
+                    "poster_path": nullify(season.get("poster_path", None), ""),
+                }
+            )
 
         return pd.DataFrame(serie_seasons_data)
     
@@ -405,12 +414,26 @@ class Mapper:
         for season in seasons:
             episodes = season.get("episodes", [])
             for episode in episodes:
+                episode_number = episode["episode_number"]
+                # TMDB is community-edited and occasionally has garbage values for
+                # this field (e.g. episode_number in the quintillions), which don't fit
+                # the database's integer column and would crash the whole sync. Clamp to
+                # a sentinel instead of dropping the episode entirely: if we drop it, the
+                # push step's cleanup would see it missing from this batch and permanently
+                # delete the row (and any user ratings attached to it) instead of just
+                # keeping a wrong episode number until TMDB fixes the value.
+                if not isinstance(episode_number, int) or not (0 <= episode_number <= 100_000):
+                    config.logger.warning(
+                        f"Implausible episode_number {episode_number!r} for episode "
+                        f"{episode.get('id')} of season {season.get('id')}, clamping to sentinel"
+                    )
+                    episode_number = 2_000_000_000
                 serie_season_episodes_data.append(
                     {
                         "id": episode["id"],
                         "tv_season_id": season["id"],
                         "air_date": episode.get("air_date", None),
-                        "episode_number": episode["episode_number"],
+                        "episode_number": episode_number,
                         "episode_type": nullify(episode.get("episode_type", None), ""),
                         "name": nullify(episode.get("name", None), ""),
                         "overview": nullify(episode.get("overview", None), ""),
