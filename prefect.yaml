@@ -118,3 +118,31 @@ deployments:
     work_queue_name:
   concurrency_limit: 5
   enforce_parameter_schema: true
+
+- name: check_store_release
+  version: 1.0.0
+  tags:
+  - mobile
+  description: >-
+    Poll App Store Connect / Play Developer API for one (platform, version) until it's
+    live, then confirm it with the API. Self-reschedules every 30min instead of sleeping,
+    and gives up loudly after 4 days -- see apps/api/src/app/system/system.service.ts and
+    .github/workflows/mobile-router.yml in the app repo.
+  schedules: []
+  entrypoint: store_release_watch/check_store_release.py:check_store_release
+  parameters: {}
+  work_pool:
+    name: kube
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: requests pyjwt cryptography google-auth google-api-python-client
+      # Deliberately tiny: each run is a couple of HTTP calls, seconds long, then the pod
+      # exits (see CHECK_INTERVAL in check_store_release.py) -- this must never be the
+      # reason the cluster scales up, even with several releases watched at once.
+      memory_request: "128Mi"
+      cpu_request: "100m"
+      memory_limit: "256Mi"
+      cpu_limit: "250m"
+    work_queue_name:
+  concurrency_limit: 10
+  enforce_parameter_schema: true

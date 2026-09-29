@@ -4,3 +4,8 @@ psycopg2-binary
 pandas
 typesense
 boto3
+requests
+pyjwt
+cryptography
+google-auth
+google-api-python-client
