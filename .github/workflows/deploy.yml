@@ -1,0 +1,27 @@
+name: 🚀 Deploy Prefect Flows
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: 🚀 Deploy all flows
+        env:
+          PREFECT_API_URL: ${{ secrets.INFISICAL_PREFECT_API_URL }}
+          PREFECT_API_AUTH_STRING: ${{ secrets.INFISICAL_PREFECT_AUTH_STRING }}
+        run: prefect deploy --all --no-prompt
