@@ -37,7 +37,6 @@ deployments:
     timezone: Europe/Paris
     day_or: true
     active: true
-    catchup: false
   entrypoint: sync_tmdb/sync_tmdb.py:sync_tmdb
   parameters: {}
   work_pool:
@@ -82,7 +81,6 @@ deployments:
     timezone: Europe/Paris
     day_or: true
     active: true
-    catchup: false
   entrypoint: generate_sitemaps/generate_sitemaps.py:generate_sitemaps
   parameters: {}
   work_pool:
