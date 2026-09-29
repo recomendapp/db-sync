@@ -52,6 +52,32 @@ deployments:
   concurrency_limit:
   enforce_parameter_schema: true
 
+- name: sync_open_library
+  version: 1.0.0
+  tags:
+  - open_library
+  description: Sync Open Library data (authors, works, editions)
+  schedules:
+  - cron: 0 2 2 * *
+    timezone: Europe/Paris
+    day_or: true
+    active: true
+    catchup: false
+  entrypoint: sync_open_library/sync_open_library.py:sync_open_library
+  parameters: {}
+  work_pool:
+    name: kube
+    job_variables:
+      env:
+        EXTRA_PIP_PACKAGES: psycopg2-binary pandas requests dateparser
+      memory_request: "4Gi"
+      cpu_request: "2"
+      memory_limit: "8Gi"
+      cpu_limit: "4"
+    work_queue_name:
+  concurrency_limit:
+  enforce_parameter_schema: true
+
 - name: sync_typesense
   version: 1.0.0
   tags:
