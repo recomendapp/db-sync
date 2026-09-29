@@ -1,0 +1,27 @@
+{
+	"tmp_directory": ".tmp",
+	"chunk_size": 20000,
+	"logs": {
+	  "table": "book.sync_logs"
+	},
+	"dump_urls": {
+	  "author": "https://openlibrary.org/data/ol_dump_authors_latest.txt.gz",
+	  "work": "https://openlibrary.org/data/ol_dump_works_latest.txt.gz",
+	  "edition": "https://openlibrary.org/data/ol_dump_editions_latest.txt.gz"
+	},
+	"db_tables": {
+	  "author": "book.author",
+	  "author_alternate_name": "book.author_alternate_name",
+	  "author_external_id": "book.author_external_id",
+	  "author_photo": "book.author_photo",
+	  "work": "book.work",
+	  "work_author": "book.work_author",
+	  "work_subject": "book.work_subject",
+	  "work_cover": "book.work_cover",
+	  "edition": "book.edition",
+	  "edition_isbn": "book.edition_isbn",
+	  "edition_language": "book.edition_language",
+	  "edition_genre": "book.edition_genre",
+	  "edition_cover": "book.edition_cover"
+	}
+  }
