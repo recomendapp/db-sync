@@ -43,9 +43,17 @@ deployments:
     name: kube
     job_variables:
       <<: *job_variables
-      memory_request: "6Gi"
-      cpu_request: "2"
-      memory_limit: "8Gi"
+      # Mesuré sur le run du 2026-11-02 (1h48, 315 relevés via metrics-server) :
+      # pic mémoire 2448 Mi, p90 2415, médiane 1811 — la conso monte par
+      # paliers à chaque phase et se libère entre deux, sans fuite (+34 Mi
+      # sur les 20 dernières minutes). 3Gi = pic + 25 %.
+      # Les 6Gi précédents ne tenaient sur aucun nœud et déclenchaient un
+      # scale-up Hetzner payant à chaque run quotidien.
+      memory_request: "3Gi"
+      memory_limit: "4Gi"
+      # 2259m au pic, médiane 750m : inactif la plupart du temps, en attente
+      # des API TMDB. L'ancien request de 2 était dépassé aux pics.
+      cpu_request: "2500m"
       cpu_limit: "4"
     work_queue_name:
   concurrency_limit:
@@ -63,9 +71,19 @@ deployments:
     name: kube
     job_variables:
       <<: *job_variables
-      memory_request: "4Gi"
-      cpu_request: "2"
-      memory_limit: "6Gi"
+      # Pas encore mesuré, mais borné par construction : les cinq flows
+      # streament via un curseur serveur nommé et traitent par lots de
+      # BATCH_SIZE=10000, donc la table entière n'est jamais en mémoire.
+      # Le seul poste qui grossit avec les données, ce sont les deux sets
+      # d'IDs comparés dans delete_stale_documents (~100-200 Mo au million).
+      # Le request est bas parce que c'est lui qui bloque le scheduling ;
+      # le limit reste large parce que c'est lui qui protège de l'OOM.
+      # À resserrer après une mesure, comme pour sync_tmdb.
+      memory_request: "1500Mi"
+      memory_limit: "4Gi"
+      # Dominé par les attentes réseau (lectures Postgres, upserts HTTP vers
+      # Typesense), pas par le calcul.
+      cpu_request: "1"
       cpu_limit: "4"
   work_queue_name:
   concurrency_limit:
