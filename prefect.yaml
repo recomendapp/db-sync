@@ -71,15 +71,15 @@ deployments:
     name: kube
     job_variables:
       <<: *job_variables
-      # Pas encore mesuré, mais borné par construction : les cinq flows
+      # Mesuré sur un run complet le 2026-11-02 (48 min, 6,53 M de documents
+      # réindexés) : pic à 404 Mi. La conception l'explique — les cinq flows
       # streament via un curseur serveur nommé et traitent par lots de
-      # BATCH_SIZE=10000, donc la table entière n'est jamais en mémoire.
-      # Le seul poste qui grossit avec les données, ce sont les deux sets
-      # d'IDs comparés dans delete_stale_documents (~100-200 Mo au million).
-      # Le request est bas parce que c'est lui qui bloque le scheduling ;
-      # le limit reste large parce que c'est lui qui protège de l'OOM.
-      # À resserrer après une mesure, comme pour sync_tmdb.
-      memory_request: "1500Mi"
+      # BATCH_SIZE=10000, donc la table entière n'est jamais en mémoire, et
+      # les deux sets d'IDs comparés dans delete_stale_documents restent
+      # modestes. 800Mi = pic + 100 %.
+      # Le limit reste large : le request bloque le scheduling, le limit
+      # protège de l'OOM.
+      memory_request: "800Mi"
       memory_limit: "4Gi"
       # Dominé par les attentes réseau (lectures Postgres, upserts HTTP vers
       # Typesense), pas par le calcul.
