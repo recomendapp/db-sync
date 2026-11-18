@@ -198,11 +198,13 @@ def sync_tmdb_movie(date: date = date.today(), update_popularity: bool = True):
 		# Get the list of movie from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_movies_df = config.tmdb_client.get_export_ids(type="movie", date=config.date)
-		tmdb_movies_set = set(tmdb_movies_df["id"])
 		if update_popularity and 'popularity' in tmdb_movies_df.columns:
-			tmdb_movies_popularity = tmdb_movies_df.set_index('id')['popularity'].to_dict()
+			tmdb_movies_popularity = dict(zip(tmdb_movies_df["id"], tmdb_movies_df["popularity"]))
+			# A keys view, not a second set: the same ids twice cost memory for nothing.
+			tmdb_movies_set = tmdb_movies_popularity.keys()
 		else:
 			tmdb_movies_popularity = {}
+			tmdb_movies_set = set(tmdb_movies_df["id"])
 		db_movies_set = get_db_movies(config)
 
 		del tmdb_movies_df

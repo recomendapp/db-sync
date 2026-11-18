@@ -127,11 +127,13 @@ def sync_tmdb_person(date: date = date.today(), update_popularity: bool = True):
 		# Get the list of person from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_persons_df = config.tmdb_client.get_export_ids(type="person", date=config.date)
-		tmdb_persons_set = set(tmdb_persons_df["id"])
 		if update_popularity and 'popularity' in tmdb_persons_df.columns:
-			tmdb_persons_popularity = tmdb_persons_df.set_index('id')['popularity'].to_dict()
+			tmdb_persons_popularity = dict(zip(tmdb_persons_df["id"], tmdb_persons_df["popularity"]))
+			# A keys view, not a second set: the same 5M ids twice cost ~400 MB for nothing.
+			tmdb_persons_set = tmdb_persons_popularity.keys()
 		else:
 			tmdb_persons_popularity = {}
+			tmdb_persons_set = set(tmdb_persons_df["id"])
 		db_persons_set = get_db_persons(config)
 
 		del tmdb_persons_df

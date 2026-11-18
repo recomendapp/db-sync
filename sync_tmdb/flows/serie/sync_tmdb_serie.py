@@ -274,11 +274,13 @@ def sync_tmdb_serie(date: date = date.today(), update_popularity: bool = True):
 		# Get the list of series from TMDB and the database
 		config.log_manager.fetching_data()
 		tmdb_series_df = config.tmdb_client.get_export_ids(type="tv_series", date=config.date)
-		tmdb_series_set = set(tmdb_series_df["id"])
 		if update_popularity and 'popularity' in tmdb_series_df.columns:
-			tmdb_series_popularity = tmdb_series_df.set_index('id')['popularity'].to_dict()
+			tmdb_series_popularity = dict(zip(tmdb_series_df["id"], tmdb_series_df["popularity"]))
+			# A keys view, not a second set: the same ids twice cost memory for nothing.
+			tmdb_series_set = tmdb_series_popularity.keys()
 		else:
 			tmdb_series_popularity = {}
+			tmdb_series_set = set(tmdb_series_df["id"])
 		db_series_set = get_db_series(config)
 
 		del tmdb_series_df
