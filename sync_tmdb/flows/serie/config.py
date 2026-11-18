@@ -228,6 +228,21 @@ class SerieConfig(Config):
 			csv["serie_episode"].clean_duplicates(conflict_columns=["tv_season_id", "episode_number"])
 			csv["serie_episode_credits"].clean_duplicates(conflict_columns=self.serie_episode_credits_on_conflict)
 
+			# Deduplication above can drop a row another file still references: season and
+			# episode numbers are each half of a unique constraint, so rows TMDB gave the same
+			# number collapse into one. Their children would then fail their foreign key on
+			# insert and take the whole batch down with them.
+			surviving_seasons = csv["serie_season"].column_values("id")
+			for child in ["serie_season_credits", "serie_season_translations", "serie_episode"]:
+				dropped = csv[child].keep_rows_in("tv_season_id", surviving_seasons)
+				if dropped:
+					self.logger.warning(f"Dropped {dropped} {child} rows whose season did not survive deduplication")
+
+			surviving_episodes = csv["serie_episode"].column_values("id")
+			dropped = csv["serie_episode_credits"].keep_rows_in("tv_episode_id", surviving_episodes)
+			if dropped:
+				self.logger.warning(f"Dropped {dropped} serie_episode_credits rows whose episode did not survive deduplication")
+
 			with conn.cursor() as cursor:
 				try:
 					conn.autocommit = False
