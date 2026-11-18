@@ -94,3 +94,52 @@ class CSVFile:
 		Clean the duplicates in the CSV file.
 		"""
 		remove_duplicates(input_file=self.file_path, output_file=self.file_path, conflict_columns=conflict_columns)
+
+	def column_values(self, column: str) -> set[str]:
+		"""
+		Return the distinct values of one column, as written in the file.
+
+		Args:
+			column (str): The column name to read.
+
+		Returns:
+			set[str]: The distinct values, unparsed, so they compare directly against
+				another file's column read the same way.
+		"""
+		with open(self.file_path, "r", encoding="utf-8", newline="") as file:
+			reader = csv.reader(file)
+			header = next(reader, None)
+			if header is None:
+				return set()
+			index = header.index(column)
+			return {row[index] for row in reader if len(row) > index}
+
+	def keep_rows_in(self, column: str, allowed: set[str]) -> int:
+		"""
+		Drop the rows whose column value is not in allowed, streaming through a copy.
+
+		Args:
+			column (str): The column name to filter on.
+			allowed (set[str]): The values to keep, as column_values returns them.
+
+		Returns:
+			int: The number of rows dropped.
+		"""
+		filtered_path = f"{self.file_path}.filtered"
+		dropped = 0
+		with open(self.file_path, "r", encoding="utf-8", newline="") as source:
+			reader = csv.reader(source)
+			header = next(reader, None)
+			if header is None:
+				return 0
+			index = header.index(column)
+			with open(filtered_path, "w", encoding="utf-8", newline="") as target:
+				writer = csv.writer(target)
+				writer.writerow(header)
+				for row in reader:
+					if len(row) > index and row[index] in allowed:
+						writer.writerow(row)
+					else:
+						dropped += 1
+		os.replace(filtered_path, self.file_path)
+		return dropped

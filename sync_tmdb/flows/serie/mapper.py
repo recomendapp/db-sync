@@ -3,6 +3,13 @@ import numpy as np
 from .config import SerieConfig as Config
 from ...utils.nullify import nullify
 
+# tv_season.season_number and tv_episode.episode_number are int4, so a larger value
+# cannot be stored at all. Anything that fits is kept as TMDB gave it: both columns
+# are half of a unique constraint, and collapsing distinct numbers onto one sentinel
+# would make the push step's deduplication drop every row but the first.
+POSTGRES_INT4_MAX = 2_147_483_647
+UNSTORABLE_NUMBER_SENTINEL = 2_000_000_000
+
 class Mapper:
     @staticmethod
     def serie(config: Config, serie: dict) -> pd.DataFrame:
@@ -338,12 +345,12 @@ class Mapper:
 
         for season in seasons:
             season_number = season["season_number"]
-            if not isinstance(season_number, int) or not (0 <= season_number <= 100_000):
+            if not isinstance(season_number, int) or not (0 <= season_number <= POSTGRES_INT4_MAX):
                 config.logger.warning(
-                    f"Implausible season_number {season_number!r} for season "
+                    f"Unstorable season_number {season_number!r} for season "
                     f"{season.get('id')} of serie {serieId}, clamping to sentinel"
                 )
-                season_number = 2_000_000_000
+                season_number = UNSTORABLE_NUMBER_SENTINEL
             serie_seasons_data.append(
                 {
                     "id": season["id"],
@@ -415,19 +422,15 @@ class Mapper:
             episodes = season.get("episodes", [])
             for episode in episodes:
                 episode_number = episode["episode_number"]
-                # TMDB is community-edited and occasionally has garbage values for
-                # this field (e.g. episode_number in the quintillions), which don't fit
-                # the database's integer column and would crash the whole sync. Clamp to
-                # a sentinel instead of dropping the episode entirely: if we drop it, the
-                # push step's cleanup would see it missing from this batch and permanently
-                # delete the row (and any user ratings attached to it) instead of just
-                # keeping a wrong episode number until TMDB fixes the value.
-                if not isinstance(episode_number, int) or not (0 <= episode_number <= 100_000):
+                # Dropping the episode is not an option: the push step's cleanup would
+                # see it missing from the batch and delete the row, along with any user
+                # ratings attached to it.
+                if not isinstance(episode_number, int) or not (0 <= episode_number <= POSTGRES_INT4_MAX):
                     config.logger.warning(
-                        f"Implausible episode_number {episode_number!r} for episode "
+                        f"Unstorable episode_number {episode_number!r} for episode "
                         f"{episode.get('id')} of season {season.get('id')}, clamping to sentinel"
                     )
-                    episode_number = 2_000_000_000
+                    episode_number = UNSTORABLE_NUMBER_SENTINEL
                 serie_season_episodes_data.append(
                     {
                         "id": episode["id"],
