@@ -6,7 +6,7 @@ from itertools import cycle
 import requests
 from datetime import date, timedelta
 from ..utils.file_manager import download_file, decompress_file
-from ..utils.concurreny import limit_concurrency
+from ..utils.concurreny import limit_concurrency, map_concurrently
 import os
 import pandas as pd
 
@@ -15,6 +15,11 @@ import pandas as pd
 # closed by the export reconciliation, not by this endpoint.
 TMDB_CHANGES_MAX_PAGE = 500
 TMDB_CHANGES_MAX_WINDOW_DAYS = 14
+
+# Every outbound call goes through request, so this caps the whole process. Callers
+# size their own thread pools from it to keep their workers busy without queueing
+# up payloads behind the semaphore.
+TMDB_MAX_CONCURRENT_REQUESTS = 20
 
 class TMDBClient:
 	def __init__(self, config: dict):
@@ -38,8 +43,7 @@ class TMDBClient:
 	def _get_next_api_key(self) -> str:
 		return next(self.api_key_cycle)
 	
-	@task(cache_policy=NO_CACHE)
-	@limit_concurrency(max_workers=20)
+	@limit_concurrency(max_workers=TMDB_MAX_CONCURRENT_REQUESTS)
 	def request(self, endpoint: str, params: dict = {}) -> dict:
 		# rate_limit("tmdb-api")
 		self.api_key = self._get_next_api_key()
@@ -134,12 +138,11 @@ class TMDBClient:
 
 		ids: set = {item["id"] for item in first_page.get("results", [])}
 
-		responses = []
-		for page in range(2, pages + 1):
-			responses.append(self.request.submit(f"{type}/changes", {**params, "page": page}))
+		def get_page(page: int) -> dict:
+			return self.request(f"{type}/changes", {**params, "page": page})
 
-		for page, response in enumerate(responses, start=2):
-			results = response.result()
+		pages_results = map_concurrently(get_page, range(2, pages + 1), TMDB_MAX_CONCURRENT_REQUESTS)
+		for page, results in enumerate(pages_results, start=2):
 			if "results" not in results:
 				raise ValueError(f"Failed to get changed ids for {day} page {page}: {results}")
 			ids |= {item["id"] for item in results["results"]}

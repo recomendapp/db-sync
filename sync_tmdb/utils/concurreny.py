@@ -1,6 +1,9 @@
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
+from itertools import islice
 from threading import Semaphore
-from typing import Callable
+from typing import Callable, Iterable, Iterator
 
 def limit_concurrency(max_workers: int) -> Callable[[Callable], Callable]:
     """Wraps methods to implement concurrency limit
@@ -33,3 +36,21 @@ def limit_concurrency(max_workers: int) -> Callable[[Callable], Callable]:
         return limited_concurrent_func
 
     return pseudo_decorator
+
+def map_concurrently(func: Callable, items: Iterable, max_workers: int) -> Iterator:
+    """Maps func over items in a thread pool, yielding results in input order.
+
+    Unlike ThreadPoolExecutor.map, only max_workers calls are ever in flight: the
+    next item is submitted as each result is yielded. A caller that consumes and
+    drops results one by one therefore holds a window of payloads, not the whole
+    iterable.
+    """
+
+    pending = iter(items)
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        window = deque(pool.submit(func, item) for item in islice(pending, max_workers))
+        while window:
+            result = window.popleft().result()
+            for item in islice(pending, 1):
+                window.append(pool.submit(func, item))
+            yield result

@@ -3,17 +3,19 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+from functools import partial
 from more_itertools import chunked
 import gc
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.cache_policies import NO_CACHE
 
 from .config import CollectionConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
+from ...models.tmdb import TMDB_MAX_CONCURRENT_REQUESTS
+from ...utils.concurreny import map_concurrently
 
 # ---------------------------------------------------------------------------- #
 
@@ -32,7 +34,6 @@ def get_db_collections(config: CollectionConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_collection_details(config: CollectionConfig, collection_id: int) -> dict:
 	try:
 		collection_details = config.tmdb_client.request(f"collection/{collection_id}")
@@ -71,10 +72,9 @@ def process_missing_collections(config: CollectionConfig):
 					prefix=f"{config.flow_name}_image"
 				)
 
-				collections_details_futures = get_tmdb_collection_details.map(config=config, collection_id=chunk)
+				collections_details = map_concurrently(partial(get_tmdb_collection_details, config), chunk, TMDB_MAX_CONCURRENT_REQUESTS)
 
-				for collection_details_response in collections_details_futures:
-					collection_data = collection_details_response.result()
+				for collection_data in collections_details:
 					if collection_data is not None:
 						collection_csv.append(rows_data=Mapper.collection(collection=collection_data["details"]))
 						collection_translation_csv.append(rows_data=Mapper.collection_translation(collection_data["translations"]))

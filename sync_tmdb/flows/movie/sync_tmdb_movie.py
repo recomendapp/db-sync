@@ -3,17 +3,19 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+from functools import partial
 from more_itertools import chunked
 import gc
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.cache_policies import NO_CACHE
 
 from .config import MovieConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
+from ...models.tmdb import TMDB_MAX_CONCURRENT_REQUESTS
+from ...utils.concurreny import map_concurrently
 
 # ---------------------------------------------------------------------------- #
 
@@ -40,7 +42,6 @@ def get_tmdb_movies_changed(config: MovieConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed movies: {e}")
 
-@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_movie_details(config: MovieConfig, movie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"
@@ -145,12 +146,9 @@ def process_missing_movies(config: MovieConfig):
 
 				typesense_documents = []
 
-				movies_details_futures = get_tmdb_movie_details.map(config=config, movie_id=chunk)
-				movies_details_results = []
-				for movie_details_response in movies_details_futures:
-					movie_details = movie_details_response.result()
+				movies_details = map_concurrently(partial(get_tmdb_movie_details, config), chunk, TMDB_MAX_CONCURRENT_REQUESTS)
+				for movie_details in movies_details:
 					if movie_details is not None:
-						movies_details_results.append(movie_details)
 						csv["movie"].append(rows_data=Mapper.movie(config=config,movie=movie_details))
 						csv["movie_alternative_titles"].append(rows_data=Mapper.movie_alternative_titles(config=config,movie=movie_details))
 						movie_credits_df, movie_roles_df = Mapper.movie_credits(config=config,movie=movie_details)

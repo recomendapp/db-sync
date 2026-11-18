@@ -3,17 +3,19 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+from functools import partial
 from more_itertools import chunked
 import gc
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.cache_policies import NO_CACHE
 
 from .config import PersonConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
+from ...models.tmdb import TMDB_MAX_CONCURRENT_REQUESTS
+from ...utils.concurreny import map_concurrently
 
 # ---------------------------------------------------------------------------- #
 
@@ -40,7 +42,6 @@ def get_tmdb_persons_changed(config: PersonConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed persons: {e}")
 
-@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_person_details(config: PersonConfig, person_id: int) -> dict:
 	try:
 		# Get persons details from TMDB in the default language and the extra languages
@@ -86,10 +87,9 @@ def process_missing_persons(config: PersonConfig):
 
 				typesense_documents = []
 
-				persons_details_futures = get_tmdb_person_details.map(config=config, person_id=chunk)
+				persons_details = map_concurrently(partial(get_tmdb_person_details, config), chunk, TMDB_MAX_CONCURRENT_REQUESTS)
 
-				for person_details_response in persons_details_futures:
-					person_details = person_details_response.result()
+				for person_details in persons_details:
 					if person_details is not None:
 						person_csv.append(rows_data=Mapper.person(config=config,person=person_details))
 						person_translation_csv.append(rows_data=Mapper.person_translation(person=person_details))
