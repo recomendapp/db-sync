@@ -10,7 +10,6 @@ from prefect.variables import Variable
 from prefect.logging import get_run_logger
 from prefect import task
 import pandas as pd
-import gc
 import uuid
 
 class Config:
@@ -42,17 +41,15 @@ class Config:
 		conn = self.db_client.get_connection()
 		popularity_csv = None
 		try:
-			popularity_df = pd.DataFrame(list(tmdb_popularity_data.items()), columns=['id', 'popularity'])
-
 			popularity_csv = CSVFile(
 				columns=['id', 'popularity'],
 				tmp_directory=self.tmp_directory,
 				prefix=f"{content_type}_popularity_update"
 			)
-			popularity_csv.append(rows_data=popularity_df)
-
-			del popularity_df
-			gc.collect()
+			popularity_csv.append_rows(
+				(item_id, "" if pd.isna(popularity) else popularity)
+				for item_id, popularity in tmdb_popularity_data.items()
+			)
 		
 			with conn.cursor() as cursor:
 				conn.autocommit = False

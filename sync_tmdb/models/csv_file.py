@@ -1,6 +1,8 @@
+import csv
 import os
 import pandas as pd
 import uuid
+from typing import Iterable, Sequence
 
 from ..utils.file_manager import remove_duplicates
 
@@ -51,6 +53,16 @@ class CSVFile:
 			raise ValueError("Rows data must be a DataFrame")
 		
 		rows_data.to_csv(self.file_path, mode='a', index=False, header=False)
+	
+	def append_rows(self, rows: Iterable[Sequence]):
+		"""
+		Append rows to the CSV file without holding them in memory.
+
+		Args:
+			rows (Iterable[Sequence]): An iterable of row values, ordered like the columns.
+		"""
+		with open(self.file_path, "a", encoding="utf-8", newline="") as file:
+			csv.writer(file).writerows(rows)
 	
 	def get_file_path(self) -> str:
 		"""
