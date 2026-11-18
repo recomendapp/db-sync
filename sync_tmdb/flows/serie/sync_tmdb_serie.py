@@ -3,17 +3,19 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+from functools import partial
 from more_itertools import chunked
 import gc
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.cache_policies import NO_CACHE
 
 from .config import SerieConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
+from ...models.tmdb import TMDB_MAX_CONCURRENT_REQUESTS
+from ...utils.concurreny import map_concurrently
 
 # ---------------------------------------------------------------------------- #
 
@@ -40,7 +42,6 @@ def get_tmdb_series_changed(config: SerieConfig):
 	except Exception as e:
 		raise ValueError(f"Failed to get changed series: {e}")
 
-@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_serie_details(config: SerieConfig, serie_id: int) -> dict:
 	try:
 		main_video_languages = "en,fr,es,ja,de"
@@ -212,9 +213,8 @@ def process_missing_series(config: SerieConfig):
 
 				typesense_documents = []
 
-				series_details_futures = get_tmdb_serie_details.map(config=config, serie_id=chunk)
-				for serie_details_response in series_details_futures:
-					serie_details = serie_details_response.result()
+				series_details = map_concurrently(partial(get_tmdb_serie_details, config), chunk, TMDB_MAX_CONCURRENT_REQUESTS)
+				for serie_details in series_details:
 					if serie_details is not None:
 						csv["serie"].append(rows_data=Mapper.serie(config=config,serie=serie_details))
 						csv["serie_alternative_titles"].append(rows_data=Mapper.serie_alternative_titles(config=config,serie=serie_details))

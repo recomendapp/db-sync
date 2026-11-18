@@ -3,17 +3,19 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+from functools import partial
 from more_itertools import chunked
 import gc
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.cache_policies import NO_CACHE
 
 from .config import CompanyConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
+from ...models.tmdb import TMDB_MAX_CONCURRENT_REQUESTS
+from ...utils.concurreny import map_concurrently
 
 # ---------------------------------------------------------------------------- #
 
@@ -32,7 +34,6 @@ def get_db_companies(config: CompanyConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_company_details(config: CompanyConfig, company_id: int) -> dict:
 	try:
 		company_details = config.tmdb_client.request(f"company/{company_id}", {"append_to_response": "alternative_names,images"})
@@ -64,10 +65,9 @@ def process_missing_companies(config: CompanyConfig):
 					prefix=f"{config.flow_name}_alternative_name"
 				)
 
-				companies_details_futures = get_tmdb_company_details.map(config=config, company_id=chunk)
+				companies_details = map_concurrently(partial(get_tmdb_company_details, config), chunk, TMDB_MAX_CONCURRENT_REQUESTS)
 
-				for company_details_response in companies_details_futures:
-					company_data = company_details_response.result()
+				for company_data in companies_details:
 					if company_data is not None:
 						company_csv.append(rows_data=Mapper.company(company=company_data))
 						company_image_csv.append(rows_data=Mapper.company_image(company=company_data))

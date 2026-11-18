@@ -3,17 +3,19 @@
 # ---------------------------------------------------------------------------- #
 
 from datetime import date
+from functools import partial
 from more_itertools import chunked
 import gc
 
 # ---------------------------------- Prefect --------------------------------- #
-from prefect import flow, task
+from prefect import flow
 from prefect.logging import get_run_logger
-from prefect.cache_policies import NO_CACHE
 
 from .config import NetworkConfig
 from .mapper import Mapper
 from ...models.csv_file import CSVFile
+from ...models.tmdb import TMDB_MAX_CONCURRENT_REQUESTS
+from ...utils.concurreny import map_concurrently
 
 # ---------------------------------------------------------------------------- #
 
@@ -32,7 +34,6 @@ def get_db_networks(config: NetworkConfig) -> set:
 	finally:
 		config.db_client.return_connection(conn)
 
-@task(cache_policy=NO_CACHE, log_prints=False)
 def get_tmdb_network_details(config: NetworkConfig, network_id: int) -> dict:
 	try:
 		network_details = config.tmdb_client.request(f"network/{network_id}", {"append_to_response": "alternative_names,images"})
@@ -64,11 +65,10 @@ def process_missing_networks(config: NetworkConfig):
 					prefix=f"{config.flow_name}_alternative_name"
 				)
 
-				networks_details_futures = get_tmdb_network_details.map(config=config, network_id=chunk)
+				networks_details = map_concurrently(partial(get_tmdb_network_details, config), chunk, TMDB_MAX_CONCURRENT_REQUESTS)
 
 
-				for network_details_response in networks_details_futures:
-					network_data = network_details_response.result()
+				for network_data in networks_details:
 					if network_data is not None:
 						network_csv.append(rows_data=Mapper.network(network=network_data))
 						network_image_csv.append(rows_data=Mapper.network_image(network=network_data))
