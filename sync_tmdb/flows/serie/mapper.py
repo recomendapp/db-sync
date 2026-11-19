@@ -2,12 +2,12 @@ import pandas as pd
 import numpy as np
 from .config import SerieConfig as Config
 from ...utils.nullify import nullify
+from ...utils.pg_int import POSTGRES_INTEGER_MAX, integer, smallint
 
-# tv_season.season_number and tv_episode.episode_number are int4, so a larger value
-# cannot be stored at all. Anything that fits is kept as TMDB gave it: both columns
-# are half of a unique constraint, and collapsing distinct numbers onto one sentinel
-# would make the push step's deduplication drop every row but the first.
-POSTGRES_INT4_MAX = 2_147_483_647
+# season_number and episode_number cannot fall back to a default like the other
+# numbers: they are NOT NULL and each is half of a unique constraint, so collapsing
+# distinct values onto one sentinel makes the push step's deduplication drop every
+# row but the first. Anything that fits is kept exactly as TMDB gave it.
 UNSTORABLE_NUMBER_SENTINEL = 2_000_000_000
 
 class Mapper:
@@ -25,8 +25,8 @@ class Mapper:
                 "type": nullify(serie.get("type", None), ""),
                 "vote_average": serie.get("vote_average", 0),
                 "vote_count": serie.get("vote_count", 0),
-                "number_of_episodes": serie.get("number_of_episodes", 0),
-                "number_of_seasons": serie.get("number_of_seasons", 0),
+                "number_of_episodes": integer(serie.get("number_of_episodes", 0)),
+                "number_of_seasons": integer(serie.get("number_of_seasons", 0)),
                 "first_air_date": serie.get("first_air_date", None),
                 "last_air_date": serie.get("last_air_date", None),
                 "updated_at": config.date,
@@ -113,10 +113,10 @@ class Mapper:
                 "file_path": image["file_path"],
                 "type": imageType,
                 "aspect_ratio": image.get("aspect_ratio", 0),
-                "height": image.get("height", 0),
-                "width": image.get("width", 0),
+                "height": integer(image.get("height", 0)),
+                "width": integer(image.get("width", 0)),
                 "vote_average": image.get("vote_average", 0),
-                "vote_count": image.get("vote_count", 0),
+                "vote_count": integer(image.get("vote_count", 0)),
                 "iso_639_1": nullify(image.get("iso_639_1", None), "")
             }
             for imageType in ["backdrop", "poster", "logo"]
@@ -261,7 +261,7 @@ class Mapper:
                 "name": video.get("name", None),
                 "key": video.get("key", None),
                 "site": video.get("site", None),
-                "size": video.get("size", None),
+                "size": smallint(video.get("size", None), None),
                 "type": video.get("type", None),
                 "official": video.get("official", False),
                 "published_at": video.get("published_at", None)
@@ -297,8 +297,8 @@ class Mapper:
                         {
                             "credit_id": role["credit_id"],
                             "character": role["character"],
-                            "episode_count": role["episode_count"],
-                            '"order"': credit.get("order", 0),
+                            "episode_count": integer(role["episode_count"], None),
+                            '"order"': smallint(credit.get("order", 0)),
                         }
                     )
 
@@ -345,7 +345,7 @@ class Mapper:
 
         for season in seasons:
             season_number = season["season_number"]
-            if not isinstance(season_number, int) or not (0 <= season_number <= POSTGRES_INT4_MAX):
+            if not isinstance(season_number, int) or not (0 <= season_number <= POSTGRES_INTEGER_MAX):
                 config.logger.warning(
                     f"Unstorable season_number {season_number!r} for season "
                     f"{season.get('id')} of serie {serieId}, clamping to sentinel"
@@ -358,7 +358,7 @@ class Mapper:
                     "season_number": season_number,
                     "episode_count": len(season.get("episodes", [])),
                     "vote_average": season.get("vote_average", 0),
-                    "vote_count": season.get("vote_count", 0),
+                    "vote_count": integer(season.get("vote_count", 0)),
                     "poster_path": nullify(season.get("poster_path", None), ""),
                 }
             )
@@ -378,7 +378,7 @@ class Mapper:
                         {
                             "credit_id": credit["credit_id"],
                             "tv_season_id": season["id"],
-                            '"order"': credit["order"],
+                            '"order"': integer(credit["order"], None),
                         }
                     )
             
@@ -425,7 +425,7 @@ class Mapper:
                 # Dropping the episode is not an option: the push step's cleanup would
                 # see it missing from the batch and delete the row, along with any user
                 # ratings attached to it.
-                if not isinstance(episode_number, int) or not (0 <= episode_number <= POSTGRES_INT4_MAX):
+                if not isinstance(episode_number, int) or not (0 <= episode_number <= POSTGRES_INTEGER_MAX):
                     config.logger.warning(
                         f"Unstorable episode_number {episode_number!r} for episode "
                         f"{episode.get('id')} of season {season.get('id')}, clamping to sentinel"
@@ -441,10 +441,10 @@ class Mapper:
                         "name": nullify(episode.get("name", None), ""),
                         "overview": nullify(episode.get("overview", None), ""),
                         "production_code": nullify(episode.get("production_code", None), ""),
-                        "runtime": episode.get("runtime", 0),
+                        "runtime": integer(episode.get("runtime", 0)),
                         "still_path": nullify(episode.get("still_path", None), ""),
                         "vote_average": episode.get("vote_average", 0),
-                        "vote_count": episode.get("vote_count", 0),
+                        "vote_count": integer(episode.get("vote_count", 0)),
                     }
                 )
         

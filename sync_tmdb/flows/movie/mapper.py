@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from .config import MovieConfig as Config
 from ...utils.nullify import nullify
+from ...utils.pg_int import integer, smallint
 
 class Mapper:
 	@staticmethod
@@ -66,7 +67,7 @@ class Mapper:
 					movie_roles_data.append({
 						"credit_id": credit["credit_id"],
 						"character": nullify(credit["character"], ""),
-						"order": credit.get("order", 0),
+						"order": smallint(credit.get("order", 0)),
 					})
 		
 		return pd.DataFrame(movie_credits_data), pd.DataFrame(movie_roles_data)
@@ -115,10 +116,10 @@ class Mapper:
 				"file_path": image["file_path"],
 				"type": imageType,
 				"aspect_ratio": image.get("aspect_ratio", 0),
-				"height": image.get("height", 0),
-				"width": image.get("width", 0),
+				"height": integer(image.get("height", 0)),
+				"width": integer(image.get("width", 0)),
 				"vote_average": image.get("vote_average", 0),
-				"vote_count": image.get("vote_count", 0),
+				"vote_count": integer(image.get("vote_count", 0)),
 				"iso_639_1": nullify(image.get("iso_639_1", None), "")
 			}
 			for imageType in ["backdrop", "poster", "logo"]
@@ -204,7 +205,7 @@ class Mapper:
 				"certification": nullify(release_date.get("certification"), ""),
 				"iso_639_1": nullify(release_date.get("iso_639_1"), "") if release_date.get("iso_639_1") and release_date.get("iso_639_1") in config.db_languages else None,
 				"note": nullify(release_date.get("note"), ""),
-				"release_type": release_date.get("type"),
+				"release_type": smallint(release_date.get("type")),
 				"descriptors": (
 					"{" + ",".join(f'"{descriptor}"' for descriptor in release_date.get("descriptors")) + "}"
 					if nullify(release_date.get("descriptors"), []) else None
@@ -243,7 +244,7 @@ class Mapper:
 				"tagline": nullify(translation["data"].get("tagline", None), ""),
 				"title": nullify(translation["data"].get("title", None), ""),
 				"homepage": nullify(translation["data"].get("homepage", None), ""),
-				"runtime": translation["data"].get("runtime", 0),
+				"runtime": integer(translation["data"].get("runtime", 0)),
 				"iso_639_1": translation["iso_639_1"],
 				"iso_3166_1": translation["iso_3166_1"]
 			}
@@ -267,7 +268,7 @@ class Mapper:
 				"name": video.get("name", None),
 				"key": video.get("key", None),
 				"site": video.get("site", None),
-				"size": video.get("size", None),
+				"size": smallint(video.get("size", None), None),
 				"type": video.get("type", None),
 				"official": video.get("official", False),
 				"published_at": video.get("published_at", None)
